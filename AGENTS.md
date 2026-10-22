@@ -36,7 +36,8 @@ core/                 Pure Kotlin/JVM build (no Android SDK). Domain + catalog c
   model/              CosmeticItem, CatalogProduct, Category, Barcodes (GTIN check digit)
   catalog/            ProductCatalog interface, OpenBeautyFactsCatalog (OkHttp + kotlinx.serialization,
                       own RateLimiter: OBF allows ~10 searches/min), CompositeCatalog (index first,
-                      API top-up, merge without duplicates), CategoryClassifier (OBF tags / names → Category)
+                      API top-up, merge without duplicates; unknown barcodes then go to Open Food Facts API v3 with
+                      product_type=all, which covers Open Products Facts too), CategoryClassifier (OBF tags / names → Category)
   search/             Offline search: SearchText (normalization shared with the indexer),
                       SearchDictionary (ru → en/fr words, Cyrillic brand names), IndexQuery (FTS4
                       expressions), IndexSchema + LocalIndexCatalog (ranking by words matched, then popularity)

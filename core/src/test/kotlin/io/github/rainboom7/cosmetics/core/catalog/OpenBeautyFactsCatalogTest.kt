@@ -88,6 +88,28 @@ class OpenBeautyFactsCatalogTest {
     }
 
     @Test
+    fun `open food facts v3 fallback finds cosmetics in any open facts database`() = runTest {
+        val off = OpenBeautyFactsCatalog(
+            client = OkHttpClient(),
+            userAgent = "test",
+            baseUrl = server.url("/"),
+            productApi = OpenBeautyFactsCatalog.ProductApi.V3_ANY_PRODUCT_TYPE,
+            source = OpenBeautyFactsCatalog.OPEN_FACTS_SOURCE,
+        )
+        server.enqueue(MockResponse().setBody(fixture("off_v3_product.json")))
+        server.enqueue(MockResponse().setResponseCode(404).setBody("""{"status":"failure","result":{"id":"product_not_found"}}"""))
+
+        val mask = off.findByBarcode("6901234567892")!!
+        val request = server.takeRequest().requestUrl!!
+        assertEquals("/api/v3/product/6901234567892", request.encodedPath)
+        assertEquals("all", request.queryParameter("product_type"))
+        assertEquals("Bioaqua Hyaluronic Acid Face Mask", mask.name)
+        assertEquals(OpenBeautyFactsCatalog.OPEN_FACTS_SOURCE, mask.source)
+        assertEquals("https://world.openfoodfacts.org/product/6901234567892", mask.details?.pageUrl)
+        assertNull(off.findByBarcode("4006381333931"))
+    }
+
+    @Test
     fun `rate limits are respected locally and reported from the server`() = runTest {
         var now = 0L
         val limited = OpenBeautyFactsCatalog(
