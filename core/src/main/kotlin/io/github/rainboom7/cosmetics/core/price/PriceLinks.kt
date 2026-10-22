@@ -15,6 +15,8 @@ object PriceLinks {
     val shops = listOf(
         // Compares many shops at once, so it goes first.
         Shop("Яндекс Маркет", "https://market.yandex.ru/search?text="),
+        Shop("Ozon", "https://www.ozon.ru/search/?text="),
+        Shop("Wildberries", "https://www.wildberries.ru/catalog/0/search.aspx?search="),
         Shop("Золотое Яблоко", "https://goldapple.ru/catalogsearch/result?q="),
         Shop("Лэтуаль", "https://www.letu.ru/s/search?q="),
         Shop("Подружка", "https://www.podrygka.ru/search/?q="),

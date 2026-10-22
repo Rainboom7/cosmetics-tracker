@@ -21,7 +21,7 @@ class PriceLinksTest {
     @Test
     fun `urls are encoded for every shop`() {
         val urls = PriceLinks.shops.map { it.url("L'Oréal крем & co") }
-        assertEquals(5, urls.size)
+        assertEquals(7, urls.size)
         urls.forEach { url ->
             assertTrue(url, url.startsWith("https://"))
             assertTrue(url, url.endsWith("L%27Or%C3%A9al%20%D0%BA%D1%80%D0%B5%D0%BC%20%26%20co"))
