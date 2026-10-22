@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.rainboom7.cosmetics.core.collection.CollectionService
 import io.github.rainboom7.cosmetics.core.model.CosmeticItem
-import io.github.rainboom7.cosmetics.core.model.ShelfStatus
+import io.github.rainboom7.cosmetics.core.model.Condition
 import io.github.rainboom7.cosmetics.core.model.UsageState
 import io.github.rainboom7.cosmetics.core.usage.ItemUsage
 import io.github.rainboom7.cosmetics.core.usage.UsageCalendar
@@ -54,11 +54,8 @@ class DetailViewModel(
         service.save(item.copy(openedOn = date, usage = if (item.usage == UsageState.NEW) UsageState.OPENED else item.usage))
     }
 
-    /** Status chip tap: tapping the selected chip again clears the status. */
-    fun toggleShelf(shelf: ShelfStatus) = launch {
-        val item = (state.value as? DetailState.Loaded)?.item ?: return@launch
-        service.setShelfStatus(id, if (item.shelfStatus == shelf) null else shelf)
-    }
+    /** "Состояние" chip tap. */
+    fun setCondition(condition: Condition) = launch { service.setCondition(id, condition) }
 
     fun toggleFavorite() = launch {
         val item = (state.value as? DetailState.Loaded)?.item ?: return@launch
@@ -66,6 +63,9 @@ class DetailViewModel(
     }
 
     fun toggleUsedToday() = launch { calendar.toggleToday(id) }
+
+    /** "Другой день": marks a past day picked in the date dialog. */
+    fun markUsedOn(date: LocalDate) = launch { calendar.setUsed(id, date, used = true) }
 
     fun toggleWantBadly() = launch {
         val item = (state.value as? DetailState.Loaded)?.item ?: return@launch

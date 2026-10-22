@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.rainboom7.cosmetics.R
 import io.github.rainboom7.cosmetics.core.model.Category
+import io.github.rainboom7.cosmetics.core.model.Condition
 import io.github.rainboom7.cosmetics.core.model.ItemBadge
 import io.github.rainboom7.cosmetics.core.model.ShelfStatus
 import io.github.rainboom7.cosmetics.core.model.UsageState
@@ -48,6 +49,20 @@ fun usageLabel(usage: UsageState): String = stringResource(
         UsageState.NEW -> R.string.usage_new
         UsageState.OPENED -> R.string.usage_opened
         UsageState.FINISHED -> R.string.usage_finished
+    },
+)
+
+@Composable
+fun conditionLabel(condition: Condition): String = stringResource(
+    when (condition) {
+        Condition.NEW -> R.string.usage_new
+        Condition.OPENED -> R.string.usage_opened
+        Condition.TRYING -> R.string.shelf_trying
+        Condition.STOCKED -> R.string.shelf_stocked
+        Condition.RUNNING_LOW -> R.string.shelf_running_low
+        Condition.NOT_USING -> R.string.shelf_not_using
+        Condition.GIVE_AWAY -> R.string.shelf_give_away
+        Condition.FINISHED -> R.string.usage_finished
     },
 )
 
@@ -101,6 +116,20 @@ fun StatusPill(status: ShelfStatus, modifier: Modifier = Modifier) {
         Text(
             shelfLabel(status),
             style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+        )
+    }
+}
+
+/** Pastel pill with an owned item's [Condition], on collection cards. */
+@Composable
+fun ConditionPill(condition: Condition, modifier: Modifier = Modifier) {
+    val tone = condition.tone()
+    Surface(color = tone.tone, contentColor = tone.ink, shape = CircleShape, modifier = modifier) {
+        Text(
+            conditionLabel(condition),
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
         )
     }

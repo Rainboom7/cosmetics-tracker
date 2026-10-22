@@ -47,9 +47,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -74,10 +72,10 @@ import androidx.compose.ui.unit.dp
 import android.widget.Toast
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.rainboom7.cosmetics.R
+import io.github.rainboom7.cosmetics.core.model.Condition
 import io.github.rainboom7.cosmetics.core.model.CosmeticItem
 import io.github.rainboom7.cosmetics.core.model.ExpiryStatus
 import io.github.rainboom7.cosmetics.core.model.ItemStatus
-import io.github.rainboom7.cosmetics.core.model.ShelfStatus
 import io.github.rainboom7.cosmetics.core.model.UsageState
 import io.github.rainboom7.cosmetics.core.usage.ItemUsage
 import io.github.rainboom7.cosmetics.ui.components.DayMonthWords
@@ -86,8 +84,7 @@ import io.github.rainboom7.cosmetics.ui.components.FullDate
 import io.github.rainboom7.cosmetics.ui.components.ItemImage
 import io.github.rainboom7.cosmetics.ui.components.appViewModel
 import io.github.rainboom7.cosmetics.ui.components.categoryLabel
-import io.github.rainboom7.cosmetics.ui.components.shelfLabel
-import io.github.rainboom7.cosmetics.ui.components.usageLabel
+import io.github.rainboom7.cosmetics.ui.components.conditionLabel
 import io.github.rainboom7.cosmetics.ui.theme.Spacing
 import io.github.rainboom7.cosmetics.ui.theme.tone
 import java.time.Instant
@@ -122,15 +119,15 @@ fun DetailRoute(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit) {
             onEdit = { onEdit(id) },
             onDelete = viewModel::delete,
             onToggleWantBadly = viewModel::toggleWantBadly,
-            onUsage = viewModel::setUsage,
+            onCondition = viewModel::setCondition,
             onRemaining = viewModel::setRemaining,
             onOpenedOn = viewModel::setOpenedOn,
             onAddPhoto = { pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
             onBuyAgain = viewModel::buyAgain,
             onBought = viewModel::markBought,
-            onShelf = viewModel::toggleShelf,
             onToggleFavorite = viewModel::toggleFavorite,
             onToggleUsedToday = viewModel::toggleUsedToday,
+            onMarkUsedOn = viewModel::markUsedOn,
         )
     }
 }
@@ -143,16 +140,16 @@ fun DetailScreen(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onToggleWantBadly: () -> Unit,
-    onUsage: (UsageState) -> Unit,
+    onCondition: (Condition) -> Unit,
     onRemaining: (Int) -> Unit,
     onOpenedOn: (LocalDate) -> Unit,
     onAddPhoto: () -> Unit,
     onBuyAgain: () -> Unit,
     onBought: () -> Unit,
     usage: ItemUsage = ItemUsage(),
-    onShelf: (ShelfStatus) -> Unit = {},
     onToggleFavorite: () -> Unit = {},
     onToggleUsedToday: () -> Unit = {},
+    onMarkUsedOn: (LocalDate) -> Unit = {},
 ) {
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
@@ -172,9 +169,8 @@ fun DetailScreen(
                     item.periodAfterOpeningMonths?.let { SoftTag(stringResource(R.string.pao_months, it)) }
                 }
                 if (item.status == ItemStatus.OWNED) {
-                    MyCopy(item, today, onUsage, onRemaining, onOpenedOn)
-                    if (item.usage != UsageState.FINISHED) StatusSection(item, onShelf)
-                    UsageSection(usage, enabled = item.usage != UsageState.FINISHED, onToggleUsedToday)
+                    MyCopy(item, today, onCondition, onRemaining, onOpenedOn)
+                    UsageSection(usage, today, enabled = item.usage != UsageState.FINISHED, onToggleUsedToday, onMarkUsedOn)
                 } else {
                     WishInfo(item)
                 }
@@ -290,7 +286,7 @@ private fun RoundButton(onClick: () -> Unit, content: @Composable () -> Unit) {
 private fun MyCopy(
     item: CosmeticItem,
     today: LocalDate,
-    onUsage: (UsageState) -> Unit,
+    onCondition: (Condition) -> Unit,
     onRemaining: (Int) -> Unit,
     onOpenedOn: (LocalDate) -> Unit,
 ) {
@@ -298,16 +294,7 @@ private fun MyCopy(
     Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = MaterialTheme.shapes.large) {
         Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text(stringResource(R.string.my_copy), style = MaterialTheme.typography.titleMedium)
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                UsageState.entries.forEachIndexed { index, usage ->
-                    SegmentedButton(
-                        selected = item.usage == usage,
-                        onClick = { onUsage(usage) },
-                        shape = SegmentedButtonDefaults.itemShape(index, UsageState.entries.size),
-                        label = { Text(usageLabel(usage)) },
-                    )
-                }
-            }
+            ConditionChips(item.condition(), onCondition)
             Row(Modifier.fillMaxWidth().clickable { pickDate = true }.padding(vertical = 4.dp)) {
                 Text(stringResource(R.string.opened_date), modifier = Modifier.weight(1f))
                 Text(item.openedOn?.format(FullDate) ?: stringResource(R.string.not_set), color = MaterialTheme.colorScheme.primary)
@@ -400,41 +387,52 @@ private fun SoftTag(text: String) {
     }
 }
 
-/** "Статус" chips: pastel per status; the automatic "Заканчивается" shows as selected but unset. */
+/**
+ * "Состояние": one pastel chip per [Condition], wrapping onto as many lines as needed. Each label
+ * stays on one line, so a chip never grows taller than its neighbours.
+ */
 @Composable
-private fun StatusSection(item: CosmeticItem, onShelf: (ShelfStatus) -> Unit) {
-    val effective = item.effectiveShelfStatus()
-    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = MaterialTheme.shapes.large) {
-        Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(stringResource(R.string.shelf_title), style = MaterialTheme.typography.titleMedium)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("shelf_chips")) {
-                ShelfStatus.entries.forEach { shelf ->
-                    val tone = shelf.tone()
-                    FilterChip(
-                        selected = effective == shelf,
-                        onClick = { onShelf(shelf) },
-                        label = { Text(shelfLabel(shelf)) },
-                        shape = CircleShape,
-                        border = null,
-                        colors = FilterChipDefaults.filterChipColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            selectedContainerColor = tone.tone,
-                            selectedLabelColor = tone.ink,
-                        ),
-                    )
-                }
-            }
-            if (item.shelfStatus != null) {
-                Text(stringResource(R.string.shelf_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun ConditionChips(selected: Condition?, onCondition: (Condition) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(R.string.condition_title), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("condition_chips")) {
+            Condition.entries.forEach { condition ->
+                val tone = condition.tone()
+                val isSelected = selected == condition
+                FilterChip(
+                    selected = isSelected,
+                    onClick = { onCondition(condition) },
+                    label = { Text(conditionLabel(condition), maxLines = 1, softWrap = false) },
+                    leadingIcon = if (isSelected) {
+                        { Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    } else {
+                        null
+                    },
+                    shape = CircleShape,
+                    border = null,
+                    colors = FilterChipDefaults.filterChipColors(
+                        containerColor = tone.tone.copy(alpha = 0.45f),
+                        labelColor = tone.ink,
+                        selectedContainerColor = tone.tone,
+                        selectedLabelColor = tone.ink,
+                        selectedLeadingIconColor = tone.ink,
+                    ),
+                )
             }
         }
     }
 }
 
-/** "Использование": mark today, last use and how often in the last 30 days. */
+/** "Использование": mark today or any past day, last use and how often in the last 30 days. */
 @Composable
-private fun UsageSection(usage: ItemUsage, enabled: Boolean, onToggleUsedToday: () -> Unit) {
+private fun UsageSection(
+    usage: ItemUsage,
+    today: LocalDate,
+    enabled: Boolean,
+    onToggleUsedToday: () -> Unit,
+    onMarkUsedOn: (LocalDate) -> Unit,
+) {
+    var pickDay by remember { mutableStateOf(false) }
     Surface(color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f), shape = MaterialTheme.shapes.large) {
         Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -453,21 +451,47 @@ private fun UsageSection(usage: ItemUsage, enabled: Boolean, onToggleUsedToday: 
                 )
             }
             if (enabled) {
-                if (usage.usedToday) {
-                    Button(
-                        onClick = onToggleUsedToday,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
-                        modifier = Modifier.fillMaxWidth().testTag("used_today"),
-                    ) {
-                        Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Text(stringResource(R.string.usage_marked_today), modifier = Modifier.padding(start = 8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    if (usage.usedToday) {
+                        Button(
+                            onClick = onToggleUsedToday,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                            modifier = Modifier.weight(1f).testTag("used_today"),
+                        ) {
+                            Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Text(stringResource(R.string.usage_marked_today), maxLines = 1, modifier = Modifier.padding(start = 6.dp))
+                        }
+                    } else {
+                        OutlinedButton(onClick = onToggleUsedToday, modifier = Modifier.weight(1f).testTag("used_today")) {
+                            Text(stringResource(R.string.usage_mark_today), maxLines = 1)
+                        }
                     }
-                } else {
-                    OutlinedButton(onClick = onToggleUsedToday, modifier = Modifier.fillMaxWidth().testTag("used_today")) {
-                        Text(stringResource(R.string.usage_mark_today))
+                    OutlinedButton(onClick = { pickDay = true }, modifier = Modifier.weight(1f).testTag("used_other_day")) {
+                        Text(stringResource(R.string.usage_other_day), maxLines = 1)
                     }
                 }
             }
+        }
+    }
+    if (pickDay) {
+        val todayMillis = today.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        val pickerState = rememberDatePickerState(
+            initialSelectedDateMillis = todayMillis,
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis <= todayMillis
+            },
+        )
+        DatePickerDialog(
+            onDismissRequest = { pickDay = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    pickDay = false
+                    pickerState.selectedDateMillis?.let { onMarkUsedOn(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()) }
+                }) { Text(stringResource(R.string.action_ok)) }
+            },
+            dismissButton = { TextButton(onClick = { pickDay = false }) { Text(stringResource(R.string.action_cancel)) } },
+        ) {
+            DatePicker(pickerState)
         }
     }
 }

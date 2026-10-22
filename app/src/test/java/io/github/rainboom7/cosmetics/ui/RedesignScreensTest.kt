@@ -9,6 +9,8 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.hasTestTag
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.github.rainboom7.cosmetics.core.model.Category
+import io.github.rainboom7.cosmetics.core.model.Condition
 import io.github.rainboom7.cosmetics.core.model.CosmeticItem
 import io.github.rainboom7.cosmetics.core.model.ShelfStatus
 import io.github.rainboom7.cosmetics.core.model.UsageState
@@ -43,6 +45,7 @@ class RedesignScreensTest {
     fun collectionShowsStatusChipsAndPills() {
         var shelf: ShelfStatus? = null
         var favorites = false
+        var category: Category? = null
         compose.setContent {
             CosmeticsTheme {
                 CollectionScreen(
@@ -50,7 +53,7 @@ class RedesignScreensTest {
                         loading = false, items = listOf(cream, serum), totalCount = 2, today = today,
                         shelfCounts = mapOf(ShelfStatus.TRYING to 1), favoriteCount = 1,
                     ),
-                    onTextChange = {}, onCategory = {}, onOpenItem = {}, onAdd = {}, onPhotoSearch = {}, onAbout = {},
+                    onTextChange = {}, onCategory = { category = it }, onOpenItem = {}, onAdd = {}, onPhotoSearch = {}, onAbout = {},
                     onShelf = { shelf = it }, onFavoritesOnly = { favorites = true },
                 )
             }
@@ -61,20 +64,22 @@ class RedesignScreensTest {
         assertEquals(ShelfStatus.TRYING, shelf)
         compose.onNodeWithText("Любимое · 1").performClick()
         assertEquals(true, favorites)
+        compose.onNodeWithTag("category_MAKEUP").performClick()
+        assertEquals(Category.MAKEUP, category)
     }
 
     @Test
-    fun detailHasStatusChipsAndMarksToday() {
-        var shelf: ShelfStatus? = null
+    fun detailHasConditionChipsAndMarksDays() {
+        var condition: Condition? = null
         var marked = false
         var favorite = false
         compose.setContent {
             CosmeticsTheme {
                 DetailScreen(
                     item = cream, today = today, onBack = {}, onEdit = {}, onDelete = {}, onToggleWantBadly = {},
-                    onUsage = {}, onRemaining = {}, onOpenedOn = {}, onAddPhoto = {}, onBuyAgain = {}, onBought = {},
+                    onCondition = { condition = it }, onRemaining = {}, onOpenedOn = {}, onAddPhoto = {}, onBuyAgain = {}, onBought = {},
                     usage = ItemUsage(lastUsed = LocalDate.of(2026, 10, 20), last30Days = 3, total = 3),
-                    onShelf = { shelf = it }, onToggleFavorite = { favorite = true }, onToggleUsedToday = { marked = true },
+                    onToggleFavorite = { favorite = true }, onToggleUsedToday = { marked = true },
                 )
             }
         }
@@ -82,8 +87,11 @@ class RedesignScreensTest {
         compose.onNodeWithTag("favorite_button", useUnmergedTree = true).performClick()
         assertEquals(true, favorite)
         compose.onNodeWithText("Последний раз: 20 октября").assertExists()
-        compose.onNodeWithText("Есть запас").performScrollTo().performClick()
-        assertEquals(ShelfStatus.STOCKED, shelf)
+        compose.onNodeWithTag("condition_chips").performScrollTo()
+        compose.onNodeWithText("Открыто").assertIsDisplayed() // the current condition
+        compose.onNodeWithText("Есть запас").performClick()
+        assertEquals(Condition.STOCKED, condition)
+        compose.onNodeWithTag("used_other_day").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("used_today").performScrollTo().performClick()
         assertEquals(true, marked)
     }
@@ -111,8 +119,9 @@ class RedesignScreensTest {
             }
         }
         compose.onNodeWithText("Октябрь 2026").assertIsDisplayed()
-        compose.onNodeWithText("4 дня подряд").assertIsDisplayed()
-        compose.onNodeWithText("2 пустые баночки в этом году").assertIsDisplayed()
+        compose.onNodeWithText("дня подряд").assertIsDisplayed()
+        compose.onNodeWithTag("streak").assertIsDisplayed()
+        compose.onNodeWithText("пустые баночки за год").assertIsDisplayed()
         compose.onNodeWithTag("selected_day").assertIsDisplayed()
         compose.onNodeWithText("22 октября").assertIsDisplayed()
 

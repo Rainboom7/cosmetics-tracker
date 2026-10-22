@@ -1,6 +1,7 @@
 package io.github.rainboom7.cosmetics.core.collection
 
 import io.github.rainboom7.cosmetics.core.model.CatalogProduct
+import io.github.rainboom7.cosmetics.core.model.Condition
 import io.github.rainboom7.cosmetics.core.model.CosmeticItem
 import io.github.rainboom7.cosmetics.core.model.ExpiryStatus
 import io.github.rainboom7.cosmetics.core.model.ItemStatus
@@ -142,6 +143,33 @@ class CollectionService(
                 finishedOn = if (usage == finished) item.finishedOn ?: today() else null,
                 shelfStatus = if (usage == finished && item.shelfStatus == ShelfStatus.RUNNING_LOW) null else item.shelfStatus,
             ),
+        )
+    }
+
+    /**
+     * Applies the single "Состояние" choice. New / Opened / Finished set the lifecycle and clear the
+     * mark; Trying and Running low imply the item is open; Stocked, Not using and Give away keep
+     * the lifecycle (a finished item becomes new again: the user has a fresh one).
+     */
+    suspend fun setCondition(id: Long, condition: Condition) {
+        when (condition) {
+            Condition.NEW -> setUsage(id, UsageState.NEW)
+            Condition.OPENED, Condition.TRYING, Condition.RUNNING_LOW -> setUsage(id, UsageState.OPENED)
+            Condition.FINISHED -> setUsage(id, UsageState.FINISHED)
+            Condition.STOCKED, Condition.NOT_USING, Condition.GIVE_AWAY ->
+                if (repository.get(id)?.usage == UsageState.FINISHED) setUsage(id, UsageState.NEW)
+        }
+        if (condition == Condition.FINISHED) return
+        setShelfStatus(
+            id,
+            when (condition) {
+                Condition.TRYING -> ShelfStatus.TRYING
+                Condition.RUNNING_LOW -> ShelfStatus.RUNNING_LOW
+                Condition.STOCKED -> ShelfStatus.STOCKED
+                Condition.NOT_USING -> ShelfStatus.NOT_USING
+                Condition.GIVE_AWAY -> ShelfStatus.GIVE_AWAY
+                else -> null
+            },
         )
     }
 

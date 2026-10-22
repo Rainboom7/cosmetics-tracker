@@ -2,6 +2,7 @@ package io.github.rainboom7.cosmetics.core.collection
 
 import io.github.rainboom7.cosmetics.core.model.CatalogProduct
 import io.github.rainboom7.cosmetics.core.model.Category
+import io.github.rainboom7.cosmetics.core.model.Condition
 import io.github.rainboom7.cosmetics.core.model.CosmeticItem
 import io.github.rainboom7.cosmetics.core.model.ItemStatus
 import io.github.rainboom7.cosmetics.core.model.ShelfStatus
@@ -232,5 +233,45 @@ class CollectionServiceTest {
         repo.upsert(wish.copy(shelfStatus = ShelfStatus.TRYING))
         service.markBought(wishId)
         assertNull(repo.get(wishId)!!.shelfStatus)
+    }
+
+    @Test
+    fun `one condition choice drives both the lifecycle and the mark`() = runTest {
+        val id = repo.upsert(CosmeticItem(name = "Крем"))
+
+        service.setCondition(id, Condition.TRYING)
+        repo.get(id)!!.let {
+            assertEquals(UsageState.OPENED, it.usage)
+            assertEquals(LocalDate.of(2026, 10, 22), it.openedOn)
+            assertEquals(ShelfStatus.TRYING, it.shelfStatus)
+            assertEquals(Condition.TRYING, it.condition())
+        }
+
+        service.setCondition(id, Condition.OPENED)
+        assertEquals(Condition.OPENED, repo.get(id)!!.condition())
+        assertNull(repo.get(id)!!.shelfStatus)
+
+        service.setCondition(id, Condition.FINISHED)
+        assertEquals(Condition.FINISHED, repo.get(id)!!.condition())
+
+        service.setCondition(id, Condition.STOCKED)
+        repo.get(id)!!.let {
+            assertEquals(UsageState.NEW, it.usage) // a finished jar marked "в запасе" is a fresh one
+            assertEquals(Condition.STOCKED, it.condition())
+        }
+
+        service.setCondition(id, Condition.NEW)
+        repo.get(id)!!.let {
+            assertEquals(Condition.NEW, it.condition())
+            assertNull(it.openedOn)
+        }
+    }
+
+    @Test
+    fun `condition ignores the slider's automatic running-low`() {
+        val low = CosmeticItem(name = "x", usage = UsageState.OPENED, remainingPercent = 10)
+        assertEquals(Condition.OPENED, low.condition())
+        assertEquals(ShelfStatus.RUNNING_LOW, low.effectiveShelfStatus())
+        assertNull(low.copy(status = ItemStatus.WISHLIST).condition())
     }
 }

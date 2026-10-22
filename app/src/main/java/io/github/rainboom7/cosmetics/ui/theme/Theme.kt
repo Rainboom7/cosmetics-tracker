@@ -17,7 +17,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Brush
 import io.github.rainboom7.cosmetics.core.model.Category
+import io.github.rainboom7.cosmetics.core.model.Condition
 import io.github.rainboom7.cosmetics.core.model.ShelfStatus
 
 // Pastel palette from the design spec, v2 ("Пудра"): dusty rose primary, lavender secondary,
@@ -25,7 +27,7 @@ import io.github.rainboom7.cosmetics.core.model.ShelfStatus
 private val LightColors = lightColorScheme(
     primary = Color(0xFF9C5B73),
     onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFFCE4EC),
+    primaryContainer = Color(0xFFFFDDE8),
     onPrimaryContainer = Color(0xFF3E1424),
     secondary = Color(0xFF6E5F80),
     onSecondary = Color(0xFFFFFFFF),
@@ -35,19 +37,19 @@ private val LightColors = lightColorScheme(
     onTertiary = Color(0xFFFFFFFF),
     tertiaryContainer = Color(0xFFDCF1E6),
     onTertiaryContainer = Color(0xFF0F2A20),
-    background = Color(0xFFFFFBFA),
+    background = Color(0xFFFFF8FA),
     onBackground = Color(0xFF2A2125),
-    surface = Color(0xFFFFFBFA),
+    surface = Color(0xFFFFF8FA),
     onSurface = Color(0xFF2A2125),
     surfaceVariant = Color(0xFFF3E7EA),
     onSurfaceVariant = Color(0xFF6A5A60),
     surfaceContainerLowest = Color(0xFFFFFFFF),
-    surfaceContainerLow = Color(0xFFFFF5F6),
-    surfaceContainer = Color(0xFFFBEFF1),
-    surfaceContainerHigh = Color(0xFFF6E9EC),
-    surfaceContainerHighest = Color(0xFFF0E3E6),
+    surfaceContainerLow = Color(0xFFFFF1F5),
+    surfaceContainer = Color(0xFFFDE9F0),
+    surfaceContainerHigh = Color(0xFFF9E2EA),
+    surfaceContainerHighest = Color(0xFFF4DBE4),
     outline = Color(0xFF9C8A90),
-    outlineVariant = Color(0xFFEADCE0),
+    outlineVariant = Color(0xFFF2D7E1),
     error = Color(0xFFB3261E),
     onError = Color(0xFFFFFFFF),
     errorContainer = Color(0xFFFFE1DE),
@@ -157,3 +159,36 @@ fun ShelfStatus.tone(): CategoryTone = when (this) {
 
 /** Dot color for usage marks in the calendar, matching the item's category. */
 val Category.dot: Color get() = tone().ink
+
+/** Chip colors for the single "Состояние" choice: lifecycle states plus the [ShelfStatus] tones. */
+fun Condition.tone(): CategoryTone = when (this) {
+    Condition.NEW -> CategoryTone(Color(0xFFFFE9F1), Color(0xFF8E3D5E))
+    Condition.OPENED -> CategoryTone(Color(0xFFFFE0EA), Color(0xFF7E3552))
+    Condition.TRYING -> ShelfStatus.TRYING.tone()
+    Condition.STOCKED -> ShelfStatus.STOCKED.tone()
+    Condition.RUNNING_LOW -> ShelfStatus.RUNNING_LOW.tone()
+    Condition.NOT_USING -> ShelfStatus.NOT_USING.tone()
+    Condition.GIVE_AWAY -> ShelfStatus.GIVE_AWAY.tone()
+    Condition.FINISHED -> CategoryTone(Color(0xFFF1ECE4), Color(0xFF6B5B45))
+}
+
+/**
+ * Candy pastels for the "tasty" accents (calendar header, stat tiles, usage heat): blush, peach,
+ * lilac and mint. Light tones with dark ink, so they read in both themes.
+ */
+object Candy {
+    val blush = Color(0xFFFFD6E5)
+    val peach = Color(0xFFFFE3D3)
+    val lilac = Color(0xFFE9DEFA)
+    val mint = Color(0xFFD7F2E5)
+    val butter = Color(0xFFFFF1C9)
+    val ink = Color(0xFF3E1424)
+
+    /** Usage heat for calendar days: 1, 2, 3+ items. */
+    val heat = listOf(Color(0xFFFFE1EC), Color(0xFFFFC3D8), Color(0xFFF7A1C0))
+
+    val header: Brush = Brush.linearGradient(listOf(blush, peach, lilac))
+    val streak: Brush = Brush.linearGradient(listOf(blush, Color(0xFFFFC9DC)))
+    val days: Brush = Brush.linearGradient(listOf(lilac, Color(0xFFDCD0F5)))
+    val empties: Brush = Brush.linearGradient(listOf(mint, Color(0xFFC6EBDA)))
+}

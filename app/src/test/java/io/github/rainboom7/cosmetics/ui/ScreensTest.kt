@@ -69,7 +69,8 @@ class ScreensTest {
         compose.onNodeWithText("Заканчивается").assertIsDisplayed()
         compose.onNodeWithText("Открыт 01.05 · до 11.2026").assertIsDisplayed()
         compose.onNodeWithTag("expiring_banner").assertIsDisplayed()
-        compose.onNodeWithText("Все · 2").assertIsDisplayed()
+        compose.onNodeWithText("Все").assertIsDisplayed()
+        compose.onNodeWithTag("category_ALL").assertIsDisplayed()
 
         compose.onNodeWithText("Тушь").performClick()
         assertEquals(2L, opened)
