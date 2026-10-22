@@ -296,4 +296,7 @@
     <string name="wishlist_subtitle">Всё, что хочется попробовать</string>
     <string name="wishlist_bought_short">Купила</string>
     <string name="calendar_subtitle">Ваш дневник ухода</string>
+    <!-- Find price -->
+    <string name="find_price_title">Найти цену</string>
+    <string name="find_price_body">Откроется поиск этого средства на сайте магазина</string>
 </resources>
