@@ -269,4 +269,7 @@
     <string name="spec_barcode">Штрихкод</string>
     <string name="action_show_all">Показать полностью</string>
     <string name="action_collapse">Свернуть</string>
+    <!-- Find price -->
+    <string name="find_price_title">Найти цену</string>
+    <string name="find_price_body">Откроется поиск этого средства на сайте магазина</string>
 </resources>

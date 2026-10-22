@@ -1,10 +1,16 @@
 package io.github.rainboom7.cosmetics.ui.catalogcard
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
@@ -22,6 +28,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -56,6 +63,7 @@ import io.github.rainboom7.cosmetics.R
 import io.github.rainboom7.cosmetics.core.collection.KnownBarcodes
 import io.github.rainboom7.cosmetics.core.model.CatalogProduct
 import io.github.rainboom7.cosmetics.core.model.ItemStatus
+import io.github.rainboom7.cosmetics.core.price.PriceLinks
 import io.github.rainboom7.cosmetics.ui.catalog.CatalogMessage
 import io.github.rainboom7.cosmetics.ui.components.EmptyState
 import io.github.rainboom7.cosmetics.ui.components.ItemImage
@@ -82,7 +90,7 @@ fun CatalogCardRoute(onBack: () -> Unit) {
             snackbar.showSnackbar(text)
         }
     }
-    CatalogCardScreen(state, known, snackbar, onBack, viewModel::add)
+    CatalogCardScreen(state, known, snackbar, onBack, viewModel::add, onOpenShop = { openInBrowserTab(context, it) })
 }
 
 @Composable
@@ -92,6 +100,7 @@ fun CatalogCardScreen(
     snackbar: SnackbarHostState,
     onBack: () -> Unit,
     onAdd: (ItemStatus) -> Unit,
+    onOpenShop: (String) -> Unit = {},
 ) {
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }, contentWindowInsets = WindowInsets(0)) { padding ->
         val product = state.product
@@ -135,6 +144,7 @@ fun CatalogCardScreen(
             Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Header(product)
                 Actions(product, known, onAdd)
+                FindPrice(product, onOpenShop)
                 product.details?.genericName?.let { Section(stringResource(R.string.catalog_card_description)) { Text(it, style = MaterialTheme.typography.bodyLarge) } }
                 Specs(product)
                 product.ingredients?.let { Ingredients(it) }
@@ -177,6 +187,38 @@ private fun Actions(product: CatalogProduct, known: KnownBarcodes, onAdd: (ItemS
                 Icon(Icons.Outlined.FavoriteBorder, contentDescription = null, modifier = Modifier.size(18.dp))
                 Text(stringResource(R.string.action_to_wishlist), modifier = Modifier.padding(start = 6.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
+        }
+    }
+}
+
+/** Shop search pages for this product; the app itself sends nothing to the shops. */
+@Composable
+private fun FindPrice(product: CatalogProduct, onOpenShop: (String) -> Unit) {
+    val query = PriceLinks.query(product)
+    Section(stringResource(R.string.find_price_title)) {
+        Text(stringResource(R.string.find_price_body), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("find_price")) {
+            PriceLinks.shops.forEach { shop ->
+                AssistChip(
+                    onClick = { onOpenShop(shop.url(query)) },
+                    label = { Text(shop.name) },
+                    trailingIcon = { Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                )
+            }
+        }
+    }
+}
+
+/** Custom Tab on top of the app; any browser when Custom Tabs are not available. */
+private fun openInBrowserTab(context: Context, url: String) {
+    val uri = Uri.parse(url)
+    try {
+        CustomTabsIntent.Builder().setShowTitle(true).build().launchUrl(context, uri)
+    } catch (e: ActivityNotFoundException) {
+        try {
+            context.startActivity(Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (ignored: ActivityNotFoundException) {
+            // No browser at all: nothing to open.
         }
     }
 }

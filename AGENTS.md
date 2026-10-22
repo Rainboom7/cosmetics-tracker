@@ -147,7 +147,9 @@ Never skip or `@Ignore` a failing test to get green.
 - Image-embedding similarity (MediaPipe Image Embedder) for duplicate detection by photo.
 - Paging 3 instead of the manual "load more" in the catalog.
 - Index updates without an app update (e.g. a weekly release asset); today it refreshes with each APK.
-- Prices in Russia: no free open API exists; the plan is shop feeds via Admitad collected by a
-  scheduled workflow into a static prices file (needs the owner's Admitad account).
+- Prices in Russia: no free open API exists. Today the product card has "Найти цену" links
+  (`core/price/PriceLinks`) that open the shops' own search pages in a Custom Tab; the app sends
+  nothing to the shops. Do not call shops' internal APIs or scrape them. A legal automatic option
+  is shop feeds via Admitad (needs the owner's account).
 - Contributing user-added products back to Open Beauty Facts (needs explicit consent).
 - Instrumented (device) tests; currently everything runs on the JVM.
