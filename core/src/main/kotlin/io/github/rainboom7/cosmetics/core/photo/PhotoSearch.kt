@@ -94,20 +94,30 @@ object MatchScorer {
             .replace(Regex("\\p{Mn}+"), "")
 }
 
-/** Runs the [PhotoQueryPlanner] plan against a catalog and returns the first non-empty result. */
-class PhotoSearch(private val catalog: ProductCatalog, private val maxQueries: Int = 5) {
+/**
+ * Runs the [PhotoQueryPlanner] plan against a catalog. A barcode hit or the most specific text
+ * query often returns a single product, so results of several queries are merged until there are
+ * [wanted] candidates, then ranked: exact barcode matches first, then by [MatchScorer] confidence.
+ */
+class PhotoSearch(
+    private val catalog: ProductCatalog,
+    private val maxQueries: Int = 5,
+    private val wanted: Int = 5,
+) {
     suspend fun search(recognition: PhotoRecognition): PhotoSearchResult {
         val plan = PhotoQueryPlanner.plan(recognition)
         val words = recognition.lines.flatMap { PhotoQueryPlanner.tokenize(it.text) }
+        val found = LinkedHashMap<String, PhotoMatch>()
+        var firstHit: PhotoQuery? = null
         for (query in plan.take(maxQueries)) {
+            if (found.size >= wanted) break
             val matches = when (query) {
                 is PhotoQuery.ByBarcode -> listOfNotNull(catalog.findByBarcode(query.barcode)).map { PhotoMatch(it, 100) }
-                is PhotoQuery.ByText -> catalog.search(query.text).products
-                    .map { PhotoMatch(it, MatchScorer.score(words, it)) }
-                    .sortedByDescending { it.confidence }
+                is PhotoQuery.ByText -> catalog.search(query.text).products.map { PhotoMatch(it, MatchScorer.score(words, it)) }
             }
-            if (matches.isNotEmpty()) return PhotoSearchResult(query, matches, plan)
+            if (matches.isNotEmpty() && firstHit == null) firstHit = query
+            matches.forEach { found.putIfAbsent(it.product.barcode ?: it.product.name, it) }
         }
-        return PhotoSearchResult(null, emptyList(), plan)
+        return PhotoSearchResult(firstHit, found.values.sortedByDescending { it.confidence }, plan)
     }
 }

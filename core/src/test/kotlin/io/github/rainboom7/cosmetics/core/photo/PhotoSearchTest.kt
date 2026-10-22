@@ -69,26 +69,44 @@ class PhotoSearchTest {
     }
 
     @Test
-    fun `barcode hit wins with full confidence`() = runTest {
-        val catalog = FakeCatalog(byBarcode = mapOf(aloe.barcode!! to aloe))
+    fun `barcode hit comes first, text queries add alternatives`() = runTest {
+        val catalog = FakeCatalog(
+            byBarcode = mapOf(aloe.barcode!! to aloe),
+            byText = mapOf("L'ORÉAL" to listOf(other, aloe)),
+        )
 
         val result = PhotoSearch(catalog).search(jar)
 
         assertEquals(PhotoQuery.ByBarcode("3600523307593"), result.matchedQuery)
-        assertEquals(listOf(PhotoMatch(aloe, 100)), result.matches)
-        assertEquals(listOf("#3600523307593"), catalog.queries)
+        assertEquals(listOf(PhotoMatch(aloe, 100)), result.matches.take(1))
+        assertEquals(listOf(aloe, other), result.matches.map { it.product }) // aloe not duplicated
     }
 
     @Test
-    fun `falls back to shorter text queries and ranks by confidence`() = runTest {
-        val catalog = FakeCatalog(byText = mapOf("L'ORÉAL Hydra Genius" to listOf(other, aloe)))
+    fun `results of several queries are merged and ranked by confidence`() = runTest {
+        val catalog = FakeCatalog(
+            byText = mapOf(
+                "L'ORÉAL Hydra Genius" to listOf(aloe),
+                "L'ORÉAL" to listOf(other, aloe),
+            ),
+        )
 
         val result = PhotoSearch(catalog).search(jar)
 
         assertEquals(PhotoQuery.ByText("L'ORÉAL Hydra Genius"), result.matchedQuery)
         assertEquals(listOf(aloe, other), result.matches.map { it.product })
         assertTrue(result.matches[0].confidence > result.matches[1].confidence)
-        assertEquals(listOf("#3600523307593", "L'ORÉAL Hydra Genius Aloe", "L'ORÉAL Hydra Genius"), catalog.queries)
+    }
+
+    @Test
+    fun `stops querying once enough candidates are found`() = runTest {
+        val many = (1..6).map { CatalogProduct("code$it", "Product $it", "Brand", null, Category.OTHER, source = "test") }
+        val catalog = FakeCatalog(byText = mapOf("L'ORÉAL Hydra Genius Aloe" to many))
+
+        val result = PhotoSearch(catalog).search(jar)
+
+        assertEquals(6, result.matches.size)
+        assertEquals(listOf("#3600523307593", "L'ORÉAL Hydra Genius Aloe"), catalog.queries)
     }
 
     @Test

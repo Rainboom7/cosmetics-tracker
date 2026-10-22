@@ -7,13 +7,18 @@ import coil3.SingletonImageLoader
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import io.github.rainboom7.cosmetics.work.ExpiryReminderWorker
 
-class CosmeticsApp : Application(), SingletonImageLoader.Factory {
+open class CosmeticsApp : Application(), SingletonImageLoader.Factory {
     lateinit var container: AppContainer
         private set
 
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        scheduleBackgroundWork()
+    }
+
+    /** Overridden in Robolectric tests, where WorkManager is not initialized. */
+    protected open fun scheduleBackgroundWork() {
         ExpiryReminderWorker.schedule(this)
     }
 
