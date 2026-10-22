@@ -162,4 +162,6 @@
         <item quantity="many">Срок подходит к концу у %1$d средств</item>
         <item quantity="other">Срок подходит к концу у %1$d средства</item>
     </plurals>
+    <!-- Fixes after first try -->
+    <string name="search_by_name">Поиск по названию</string>
 </resources>

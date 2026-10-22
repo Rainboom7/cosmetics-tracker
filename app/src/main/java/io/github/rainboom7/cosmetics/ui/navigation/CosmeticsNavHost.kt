@@ -152,6 +152,9 @@ fun CosmeticsNavHost(navController: NavHostController = rememberNavController())
                         navController.navigate(Routes.addForm(target)) { popUpTo(Routes.ADD_SCAN) { inclusive = true } }
                     },
                     onAdded = { navController.popBackStack() },
+                    onSearchByName = {
+                        navController.navigate(Routes.catalog()) { popUpTo(Routes.ADD_SCAN) { inclusive = true } }
+                    },
                 )
             }
             composable(

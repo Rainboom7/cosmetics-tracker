@@ -91,6 +91,7 @@ fun ScanRoute(
     onBack: () -> Unit,
     onOpenForm: () -> Unit,
     onAdded: () -> Unit,
+    onSearchByName: () -> Unit,
 ) {
     val context = LocalContext.current
     val viewModel = appViewModel(key = "scan") {
@@ -142,6 +143,7 @@ fun ScanRoute(
             onMode = viewModel::setMode,
             onGallery = { pickFromGallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
             onManual = viewModel::enterManually,
+            onSearchByName = onSearchByName,
         )
         if (state.busy) {
             CircularProgressIndicator(Modifier.align(Alignment.Center), color = Color.White)
@@ -235,6 +237,7 @@ private fun ScanOverlay(
     onMode: (ScanMode) -> Unit,
     onGallery: () -> Unit,
     onManual: () -> Unit,
+    onSearchByName: () -> Unit,
 ) {
     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(16.dp)) {
         IconButton(onClick = onBack) {
@@ -266,6 +269,9 @@ private fun ScanOverlay(
                 Icon(Icons.Outlined.PhotoLibrary, contentDescription = stringResource(R.string.from_gallery), tint = Color.White)
             }
             Spacer(Modifier.weight(1f))
+            TextButton(onClick = onSearchByName, modifier = Modifier.testTag("search_by_name")) {
+                Text(stringResource(R.string.search_by_name), color = Color.White)
+            }
             TextButton(onClick = onManual) { Text(stringResource(R.string.enter_manually), color = Color.White) }
         }
     }

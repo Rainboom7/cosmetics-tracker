@@ -8,6 +8,11 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.rainboom7.cosmetics.CosmeticsApp
 import io.github.rainboom7.cosmetics.MainActivity
+import io.github.rainboom7.cosmetics.core.model.ItemStatus
+import io.github.rainboom7.cosmetics.core.model.UsageState
+import io.github.rainboom7.cosmetics.testing.Samples
+import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -43,5 +48,28 @@ class NavigationTest {
 
         compose.onNodeWithTag("tab_collection").performClick()
         waitForText("Добавьте первое средство")
+    }
+
+    @Test
+    fun tabsOpenWithData() {
+        val service = ApplicationProvider.getApplicationContext<CosmeticsApp>().container.collection
+        runBlocking {
+            val owned = service.addFromCatalog(Samples.aloe, ItemStatus.OWNED).id
+            service.addFromCatalog(Samples.mascara, ItemStatus.WISHLIST)
+            service.addFromCatalog(Samples.nivea, ItemStatus.WISHLIST)
+            service.setWantBadly(service.addFromCatalog(Samples.nivea.copy(barcode = null, name = "Soft"), ItemStatus.WISHLIST).id, true)
+            service.setUsage(owned, UsageState.OPENED)
+            service.buyAgain(owned)
+        }
+
+        waitForText("Hydra Genius Aloe Water")
+        compose.onNodeWithTag("tab_wishlist").performClick()
+        waitForText("Volume Million Lashes")
+        waitForText("Похожее уже есть у вас")
+
+        compose.onNodeWithTag("tab_collection").performClick()
+        waitForText("Hydra Genius Aloe Water")
+        compose.onNodeWithTag("tab_wishlist").performClick()
+        waitForText("Volume Million Lashes")
     }
 }
