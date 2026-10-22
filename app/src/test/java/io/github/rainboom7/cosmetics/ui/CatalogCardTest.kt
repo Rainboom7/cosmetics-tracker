@@ -47,9 +47,10 @@ class CatalogCardTest {
     @Test
     fun cardShowsOnlyTheFactsTheCatalogHas() {
         var added: ItemStatus? = null
+        var opened: String? = null
         compose.setContent {
             CosmeticsTheme(dynamicColor = false) {
-                CatalogCardScreen(CatalogCardUiState(detailed), KnownBarcodes(), SnackbarHostState(), onBack = {}, onAdd = { added = it })
+                CatalogCardScreen(CatalogCardUiState(detailed), KnownBarcodes(), SnackbarHostState(), onBack = {}, onAdd = { added = it }, onOpenShop = { opened = it })
             }
         }
         compose.onNodeWithText("Hydra Genius Aloe Water").assertExists()
@@ -65,6 +66,9 @@ class CatalogCardTest {
 
         compose.onNodeWithTag("card_wish").performScrollTo().performClick()
         assertEquals(ItemStatus.WISHLIST, added)
+
+        compose.onNodeWithText("Подружка").performScrollTo().performClick()
+        assertEquals("https://www.podrygka.ru/search/?q=L%27Or%C3%A9al%20Paris%20Hydra%20Genius%20Aloe%20Water", opened)
     }
 
     @Test
