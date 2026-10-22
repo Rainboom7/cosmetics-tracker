@@ -1,17 +1,23 @@
 name: OBF probe (temporary)
 on: push
+permissions:
+  contents: write
 jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - run: |
           UA="CosmeticsTracker-Android/0.1.0 (github.com/Rainboom7)"
           F="code,product_name,product_name_ru,product_name_en,generic_name,brands,quantity,image_front_url,image_url,image_front_small_url,categories_tags,ingredients_text"
-          mkdir out
+          mkdir -p out
           for q in nivea крем loreal; do
             curl -sS -G -A "$UA" "https://world.openbeautyfacts.org/cgi/search.pl" \
               --data-urlencode "search_terms=$q" -d search_simple=1 -d action=process -d json=1 -d page=1 -d page_size=24 \
               --data-urlencode "fields=$F" -o "out/search_$q.json" -w "$q http=%{http_code} size=%{size_download}\n"
           done
           curl -sS -A "$UA" "https://world.openbeautyfacts.org/api/v2/product/4005808890590?fields=$F" -o out/product.json -w "product http=%{http_code}\n"
-          tar czf out.tgz out && base64 -w0 out.tgz > out.b64 && wc -c out.b64 && echo "B64START" && cat out.b64 && echo && echo "B64END"
+          if git log -1 --format=%s | grep -q "probe data"; then exit 0; fi
+          mkdir -p probe && mv out/* probe/
+          git config user.name ci && git config user.email ci@example.com
+          git add probe && git commit -m "probe data" && git push
