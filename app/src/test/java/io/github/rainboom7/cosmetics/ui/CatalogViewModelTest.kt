@@ -50,6 +50,28 @@ class CatalogViewModelTest {
     }
 
     @Test
+    fun `short typed queries and repeats do not hit the catalog`() = runTest(main.dispatcher) {
+        val vm = CatalogViewModel(catalog, service)
+        runCurrent()
+
+        vm.onQueryChange("ni")
+        advanceTimeBy(CatalogViewModel.DEBOUNCE_MS + 1)
+        runCurrent()
+        assertEquals(emptyList<Pair<String, Int>>(), catalog.searches)
+
+        vm.onQueryChange("nivea")
+        advanceTimeBy(CatalogViewModel.DEBOUNCE_MS + 1)
+        vm.onQueryChange("nive")
+        advanceTimeBy(CatalogViewModel.DEBOUNCE_MS + 1)
+        vm.onQueryChange("nivea")
+        advanceTimeBy(CatalogViewModel.DEBOUNCE_MS + 1)
+        runCurrent()
+
+        assertEquals(listOf("nivea" to 1, "nive" to 1), catalog.searches)
+        assertEquals(listOf(Samples.nivea), vm.state.value.results)
+    }
+
+    @Test
     fun `initial query searches right away`() = runTest(main.dispatcher) {
         val vm = CatalogViewModel(catalog, service, initialQuery = "nivea")
         runCurrent()

@@ -66,6 +66,17 @@ private val Tabs = listOf(
     Tab(Routes.CATALOG, R.string.tab_catalog, Icons.Outlined.Search, Icons.Filled.Search, Routes.catalog()),
 )
 
+/**
+ * Switches tabs the way the bottom bar does. Tabs must never be pushed on top of each other:
+ * the saved stack of the lower tab would then contain the upper one, and tapping the lower tab
+ * would restore the upper tab instead (the "Желаемое does not open" bug).
+ */
+private fun NavHostController.openTab(route: String) = navigate(route) {
+    popUpTo(graph.findStartDestination().id) { saveState = true }
+    launchSingleTop = true
+    restoreState = true
+}
+
 @Composable
 fun CosmeticsNavHost(navController: NavHostController = rememberNavController()) {
     val backStack by navController.currentBackStackEntryAsState()
@@ -82,13 +93,7 @@ fun CosmeticsNavHost(navController: NavHostController = rememberNavController())
                         val selected = tab.route == currentRoute
                         NavigationBarItem(
                             selected = selected,
-                            onClick = {
-                                navController.navigate(tab.navigateTo) {
-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
+                            onClick = { navController.openTab(tab.navigateTo) },
                             icon = { Icon(if (selected) tab.selectedIcon else tab.icon, contentDescription = null) },
                             label = { Text(stringResource(tab.label)) },
                             modifier = Modifier.testTag("tab_" + tab.route.substringBefore('?')),
@@ -114,7 +119,7 @@ fun CosmeticsNavHost(navController: NavHostController = rememberNavController())
                 Box(tabModifier) {
                     WishlistRoute(
                         onOpenItem = { navController.navigate(Routes.product(it)) },
-                        onOpenCatalog = { navController.navigate(Routes.catalog()) },
+                        onOpenCatalog = { navController.openTab(Routes.catalog()) },
                     )
                 }
             }
@@ -153,7 +158,8 @@ fun CosmeticsNavHost(navController: NavHostController = rememberNavController())
                     },
                     onAdded = { navController.popBackStack() },
                     onSearchByName = {
-                        navController.navigate(Routes.catalog()) { popUpTo(Routes.ADD_SCAN) { inclusive = true } }
+                        navController.popBackStack()
+                        navController.openTab(Routes.catalog())
                     },
                 )
             }

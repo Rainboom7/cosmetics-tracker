@@ -6,6 +6,7 @@ import io.github.rainboom7.cosmetics.core.catalog.CatalogException
 import io.github.rainboom7.cosmetics.core.catalog.ProductCatalog
 import io.github.rainboom7.cosmetics.core.collection.CollectionService
 import io.github.rainboom7.cosmetics.core.collection.KnownBarcodes
+import io.github.rainboom7.cosmetics.core.model.CatalogPage
 import io.github.rainboom7.cosmetics.core.model.CatalogProduct
 import io.github.rainboom7.cosmetics.core.model.Category
 import io.github.rainboom7.cosmetics.core.model.ItemStatus
@@ -71,10 +72,18 @@ class CatalogViewModel(
     private val queryInput = MutableStateFlow(initialQuery)
     private var searchJob: Job? = null
 
+    /** Typing back and forth must not repeat requests against the rate limit. */
+    private val firstPages = object : LinkedHashMap<String, CatalogPage>() {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, CatalogPage>) = size > 20
+    }
+
     init {
         if (initialQuery.isNotBlank()) search(initialQuery)
         viewModelScope.launch {
-            queryInput.drop(1).debounce(DEBOUNCE_MS).distinctUntilChanged().collect { search(it) }
+            queryInput.drop(1).debounce(DEBOUNCE_MS).distinctUntilChanged().collect { typed ->
+                // Open Beauty Facts allows about 10 searches a minute: don't spend them on one or two letters.
+                if (typed.isBlank() || typed.trim().length >= MIN_TYPED_QUERY) search(typed)
+            }
         }
     }
 
@@ -89,7 +98,10 @@ class CatalogViewModel(
 
     fun toggleWithPhoto() = _state.update { it.copy(withPhotoOnly = !it.withPhotoOnly) }
 
-    fun retry() = search(_state.value.query)
+    fun retry() {
+        firstPages.remove(_state.value.query.trim())
+        search(_state.value.query)
+    }
 
     fun loadMore() {
         val current = _state.value
@@ -133,7 +145,7 @@ class CatalogViewModel(
         _state.update { it.copy(loading = true, error = false) }
         searchJob = viewModelScope.launch {
             try {
-                val page = catalog.search(query, 1)
+                val page = firstPages[query.trim()] ?: catalog.search(query, 1).also { firstPages[query.trim()] = it }
                 _state.update {
                     it.copy(loading = false, results = page.products, page = 1, hasMore = page.hasMore, brand = null)
                 }
@@ -144,6 +156,7 @@ class CatalogViewModel(
     }
 
     companion object {
-        const val DEBOUNCE_MS = 300L
+        const val DEBOUNCE_MS = 800L
+        const val MIN_TYPED_QUERY = 3
     }
 }

@@ -1,6 +1,7 @@
 package io.github.rainboom7.cosmetics.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -48,6 +49,22 @@ class NavigationTest {
 
         compose.onNodeWithTag("tab_collection").performClick()
         waitForText("Добавьте первое средство")
+    }
+
+    /** Regression: the catalog opened from the wishlist was saved into the wishlist tab and came back instead of it. */
+    @Test
+    fun wishlistOpensAfterGoingToCatalogFromIt() {
+        compose.onNodeWithTag("tab_wishlist").performClick()
+        waitForText("Здесь будет то, что хочется")
+
+        compose.onNode(hasText("Найти в каталоге") and hasClickAction()).performClick()
+        waitForText("Каталог Open Beauty Facts")
+
+        compose.onNodeWithTag("tab_wishlist").performClick()
+        waitForText("Здесь будет то, что хочется")
+        compose.onNodeWithTag("tab_collection").performClick()
+        compose.onNodeWithTag("tab_wishlist").performClick()
+        waitForText("Здесь будет то, что хочется")
     }
 
     @Test
