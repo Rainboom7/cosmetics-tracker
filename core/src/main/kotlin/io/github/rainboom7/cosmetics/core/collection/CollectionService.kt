@@ -4,6 +4,7 @@ import io.github.rainboom7.cosmetics.core.model.CatalogProduct
 import io.github.rainboom7.cosmetics.core.model.CosmeticItem
 import io.github.rainboom7.cosmetics.core.model.ExpiryStatus
 import io.github.rainboom7.cosmetics.core.model.ItemStatus
+import io.github.rainboom7.cosmetics.core.model.ShelfStatus
 import io.github.rainboom7.cosmetics.core.model.UsageState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -86,6 +87,8 @@ class CollectionService(
                 openedOn = null,
                 wantBadly = false,
                 rebuy = false,
+                shelfStatus = null,
+                finishedOn = null,
                 addedAtMillis = clock.millis(),
             ),
         )
@@ -110,21 +113,47 @@ class CollectionService(
                 openedOn = null,
                 notes = "",
                 rebuy = true,
+                shelfStatus = null,
+                favorite = false,
+                finishedOn = null,
                 addedAtMillis = clock.millis(),
             ),
         )
     }
 
-    /** Changes the usage state; opening an item for the first time starts its PAO countdown today. */
-    suspend fun setUsage(id: Long, usage: UsageState) {
+    /**
+     * Changes the usage state; opening an item for the first time starts its PAO countdown on
+     * [openedOn] (today by default). Finishing stamps [CosmeticItem.finishedOn] and drops a
+     * "running low" mark, which no longer means anything for an empty jar.
+     */
+    suspend fun setUsage(id: Long, usage: UsageState, openedOn: LocalDate = today()) {
         val item = repository.get(id) ?: return
-        val openedOn = when {
+        val opened = when {
             usage == UsageState.NEW -> null
-            item.openedOn == null -> today()
+            item.openedOn == null -> openedOn
             else -> item.openedOn
         }
-        val remaining = if (usage == UsageState.FINISHED) 0 else item.remainingPercent.coerceAtLeast(1)
-        repository.upsert(item.copy(usage = usage, openedOn = openedOn, remainingPercent = remaining))
+        val finished = UsageState.FINISHED
+        repository.upsert(
+            item.copy(
+                usage = usage,
+                openedOn = opened,
+                remainingPercent = if (usage == finished) 0 else item.remainingPercent.coerceAtLeast(1),
+                finishedOn = if (usage == finished) item.finishedOn ?: today() else null,
+                shelfStatus = if (usage == finished && item.shelfStatus == ShelfStatus.RUNNING_LOW) null else item.shelfStatus,
+            ),
+        )
+    }
+
+    /** Sets or clears (null) the user's status mark; tapping the selected chip again clears it. */
+    suspend fun setShelfStatus(id: Long, shelfStatus: ShelfStatus?) {
+        val item = repository.get(id) ?: return
+        repository.upsert(item.copy(shelfStatus = shelfStatus))
+    }
+
+    suspend fun setFavorite(id: Long, favorite: Boolean) {
+        val item = repository.get(id) ?: return
+        repository.upsert(item.copy(favorite = favorite))
     }
 
     suspend fun setRemaining(id: Long, percent: Int) {
@@ -169,6 +198,9 @@ class CollectionService(
                 wishlistCount = items.count { it.status == ItemStatus.WISHLIST },
                 expiringSoonCount = expiry[ExpiryStatus.SOON] ?: 0,
                 expiredCount = expiry[ExpiryStatus.EXPIRED] ?: 0,
+                shelfCounts = owned.mapNotNull { it.effectiveShelfStatus() }.groupingBy { it }.eachCount(),
+                favoriteCount = owned.count { it.favorite },
+                finishedThisYear = items.count { it.status == ItemStatus.OWNED && it.finishedOn?.year == today.year },
             )
         }
     }
@@ -179,6 +211,11 @@ data class CollectionSummary(
     val wishlistCount: Int,
     val expiringSoonCount: Int,
     val expiredCount: Int,
+    /** Items in use per status chip, counting the automatic "Заканчивается". */
+    val shelfCounts: Map<ShelfStatus, Int> = emptyMap(),
+    val favoriteCount: Int = 0,
+    /** "Пустые баночки": items used up this calendar year. */
+    val finishedThisYear: Int = 0,
 ) {
     companion object {
         val EMPTY = CollectionSummary(0, 0, 0, 0)

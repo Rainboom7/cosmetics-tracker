@@ -49,7 +49,7 @@ fun AboutRoute(onBack: () -> Unit) {
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
             val ok = runCatching {
-                val json = CollectionBackup.export(container.collection.observeAll().first())
+                val json = CollectionBackup.export(container.collection.observeAll().first(), container.usageLog.observeAll().first())
                 withContext(Dispatchers.IO) {
                     context.contentResolver.openOutputStream(uri)!!.use { it.write(json.toByteArray()) }
                 }
@@ -64,7 +64,7 @@ fun AboutRoute(onBack: () -> Unit) {
                 val text = withContext(Dispatchers.IO) {
                     context.contentResolver.openInputStream(uri)!!.use { it.readBytes().decodeToString() }
                 }
-                container.repository.replaceAll(CollectionBackup.import(text))
+                CollectionBackup.restore(text, container.repository, container.usageLog)
             }.isSuccess
             Toast.makeText(context, if (ok) R.string.backup_restored else R.string.backup_failed, Toast.LENGTH_SHORT).show()
         }

@@ -4,6 +4,7 @@ import io.github.rainboom7.cosmetics.core.model.CatalogProduct
 import io.github.rainboom7.cosmetics.core.model.Category
 import io.github.rainboom7.cosmetics.core.model.CosmeticItem
 import io.github.rainboom7.cosmetics.core.model.ItemStatus
+import io.github.rainboom7.cosmetics.core.model.ShelfStatus
 import io.github.rainboom7.cosmetics.core.model.UsageState
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -177,5 +178,59 @@ class CollectionServiceTest {
         repo.upsert(CosmeticItem(name = "c"))
 
         assertEquals(KnownBarcodes(owned = setOf("1"), wishlist = setOf("2")), service.observeKnownBarcodes().first())
+    }
+
+    @Test
+    fun `finishing stamps the day and drops a running-low mark`() = runTest {
+        val id = repo.upsert(CosmeticItem(name = "Тушь", usage = UsageState.OPENED, openedOn = LocalDate.of(2026, 5, 1), shelfStatus = ShelfStatus.RUNNING_LOW))
+
+        service.setUsage(id, UsageState.FINISHED)
+
+        val finished = repo.get(id)!!
+        assertEquals(LocalDate.of(2026, 10, 22), finished.finishedOn)
+        assertNull(finished.shelfStatus)
+        assertEquals(1, service.observeSummary().first().finishedThisYear)
+
+        service.setUsage(id, UsageState.OPENED)
+        assertNull(repo.get(id)!!.finishedOn)
+    }
+
+    @Test
+    fun `opening on a given day starts PAO from that day`() = runTest {
+        val id = repo.upsert(CosmeticItem(name = "Крем"))
+        service.setUsage(id, UsageState.OPENED, openedOn = LocalDate.of(2026, 10, 3))
+        assertEquals(LocalDate.of(2026, 10, 3), repo.get(id)!!.openedOn)
+    }
+
+    @Test
+    fun `status and favorite marks, counted in the summary`() = runTest {
+        val a = repo.upsert(CosmeticItem(name = "A"))
+        val b = repo.upsert(CosmeticItem(name = "B", usage = UsageState.OPENED, remainingPercent = 10))
+
+        service.setShelfStatus(a, ShelfStatus.NOT_USING)
+        service.setFavorite(b, true)
+
+        val summary = service.observeSummary().first()
+        assertEquals(mapOf(ShelfStatus.NOT_USING to 1, ShelfStatus.RUNNING_LOW to 1), summary.shelfCounts)
+        assertEquals(1, summary.favoriteCount)
+
+        service.setShelfStatus(a, null)
+        assertNull(repo.get(a)!!.shelfStatus)
+    }
+
+    @Test
+    fun `bought and buy-again copies start without old marks`() = runTest {
+        val owned = repo.upsert(
+            CosmeticItem(name = "A", barcode = "1", favorite = true, shelfStatus = ShelfStatus.RUNNING_LOW, finishedOn = LocalDate.of(2026, 1, 1)),
+        )
+        val wishId = service.buyAgain(owned)!!
+        val wish = repo.get(wishId)!!
+        assertNull(wish.shelfStatus)
+        assertFalse(wish.favorite)
+        assertNull(wish.finishedOn)
+
+        repo.upsert(wish.copy(shelfStatus = ShelfStatus.TRYING))
+        service.markBought(wishId)
+        assertNull(repo.get(wishId)!!.shelfStatus)
     }
 }

@@ -71,4 +71,22 @@ class CosmeticItemTest {
         assertEquals(expected, item)
         assertNull(product.copy(imageUrl = null).toItem(ItemStatus.OWNED, 0).catalogSource)
     }
+
+    @Test
+    fun `the user's status wins over the automatic running-low one`() {
+        val low = CosmeticItem(name = "x", usage = UsageState.OPENED, remainingPercent = 10)
+        assertEquals(ShelfStatus.RUNNING_LOW, low.effectiveShelfStatus())
+        assertEquals(ShelfStatus.NOT_USING, low.copy(shelfStatus = ShelfStatus.NOT_USING).effectiveShelfStatus())
+        assertNull(low.copy(remainingPercent = 80).effectiveShelfStatus())
+        assertNull(low.copy(usage = UsageState.FINISHED, shelfStatus = ShelfStatus.STOCKED).effectiveShelfStatus())
+        assertNull(low.copy(status = ItemStatus.WISHLIST).effectiveShelfStatus())
+    }
+
+    @Test
+    fun `a hand-set running-low status shows the badge even when the slider says plenty`() {
+        val today = LocalDate.of(2026, 1, 1)
+        val item = CosmeticItem(name = "x", shelfStatus = ShelfStatus.RUNNING_LOW)
+        assertEquals(ItemBadge.RUNNING_LOW, item.badge(today))
+        assertNull(item.copy(shelfStatus = ShelfStatus.STOCKED).badge(today))
+    }
 }

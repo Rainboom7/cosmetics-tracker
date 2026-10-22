@@ -6,8 +6,11 @@ import io.github.rainboom7.cosmetics.core.catalog.ProductCatalog
 import io.github.rainboom7.cosmetics.core.collection.CollectionRepository
 import io.github.rainboom7.cosmetics.core.collection.CollectionService
 import io.github.rainboom7.cosmetics.core.photo.PhotoSearch
+import io.github.rainboom7.cosmetics.core.usage.UsageCalendar
+import io.github.rainboom7.cosmetics.core.usage.UsageLogRepository
 import io.github.rainboom7.cosmetics.data.db.AppDatabase
 import io.github.rainboom7.cosmetics.data.db.RoomCollectionRepository
+import io.github.rainboom7.cosmetics.data.db.RoomUsageLogRepository
 import io.github.rainboom7.cosmetics.data.photo.MlKitPhotoRecognizer
 import io.github.rainboom7.cosmetics.data.photo.PhotoRecognizer
 import io.github.rainboom7.cosmetics.data.photo.PhotoStorage
@@ -34,6 +37,10 @@ class AppContainer(context: Context) {
     val repository: CollectionRepository by lazy { RoomCollectionRepository(database.items()) }
 
     val collection: CollectionService by lazy { CollectionService(repository) }
+
+    val usageLog: UsageLogRepository by lazy { RoomUsageLogRepository(database.usage()) }
+
+    val usage: UsageCalendar by lazy { UsageCalendar(usageLog, collection) }
 
     val catalog: ProductCatalog by lazy {
         OpenBeautyFactsCatalog(

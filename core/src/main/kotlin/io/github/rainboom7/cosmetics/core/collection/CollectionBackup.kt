@@ -3,7 +3,10 @@ package io.github.rainboom7.cosmetics.core.collection
 import io.github.rainboom7.cosmetics.core.model.Category
 import io.github.rainboom7.cosmetics.core.model.CosmeticItem
 import io.github.rainboom7.cosmetics.core.model.ItemStatus
+import io.github.rainboom7.cosmetics.core.model.ShelfStatus
 import io.github.rainboom7.cosmetics.core.model.UsageState
+import io.github.rainboom7.cosmetics.core.usage.UsageLogRepository
+import io.github.rainboom7.cosmetics.core.usage.UsageMark
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -14,17 +17,38 @@ import java.time.LocalDate
  * JSON backup of the collection, so the user can move to a new phone. Own photo URIs are kept
  * as is: they only resolve on the same device, catalog images resolve everywhere.
  * Enums are stored by name and unknown names fall back to defaults, so old backups keep working.
+ * Version 2 added the status marks and the usage calendar, kept per item as a list of days.
  */
 object CollectionBackup {
-    const val FORMAT_VERSION = 1
+    const val FORMAT_VERSION = 2
 
     private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
 
-    fun export(items: List<CosmeticItem>): String =
-        json.encodeToString(BackupFile.serializer(), BackupFile(FORMAT_VERSION, items.map(BackupItem::from)))
+    /** An item from a backup with the days it was used. */
+    data class Entry(val item: CosmeticItem, val usedOn: List<LocalDate> = emptyList())
+
+    fun export(items: List<CosmeticItem>, usage: List<UsageMark> = emptyList()): String {
+        val usedOn = usage.groupBy({ it.itemId }, { it.date })
+        val backupItems = items.map { BackupItem.from(it, usedOn[it.id].orEmpty().sorted()) }
+        return json.encodeToString(BackupFile.serializer(), BackupFile(FORMAT_VERSION, backupItems))
+    }
 
     /** @throws IllegalArgumentException if the text is not a backup this version understands. */
-    fun import(text: String): List<CosmeticItem> {
+    fun import(text: String): List<CosmeticItem> = read(text).map { it.item }
+
+    /**
+     * Replaces the collection and adds the usage calendar from [text].
+     * @throws IllegalArgumentException if the text is not a backup this version understands;
+     * nothing is changed then.
+     */
+    suspend fun restore(text: String, repository: CollectionRepository, usageLog: UsageLogRepository) {
+        val entries = read(text)
+        val ids = repository.replaceAll(entries.map { it.item })
+        usageLog.addAll(entries.zip(ids).flatMap { (entry, id) -> entry.usedOn.map { UsageMark(id, it) } })
+    }
+
+    /** @throws IllegalArgumentException if the text is not a backup this version understands. */
+    fun read(text: String): List<Entry> {
         val file = try {
             json.decodeFromString(BackupFile.serializer(), text)
         } catch (e: SerializationException) {
@@ -32,7 +56,7 @@ object CollectionBackup {
         }
         require(file.version <= FORMAT_VERSION) { "Backup version ${file.version} is newer than $FORMAT_VERSION" }
         return try {
-            file.items.map(BackupItem::toItem)
+            file.items.map { Entry(it.toItem(), it.usedOn.map(LocalDate::parse)) }
         } catch (e: DateTimeException) {
             throw IllegalArgumentException("Bad date in backup", e)
         }
@@ -64,6 +88,10 @@ object CollectionBackup {
         val price: String? = null,
         val link: String? = null,
         val addedAtMillis: Long = 0,
+        val shelfStatus: String? = null,
+        val favorite: Boolean = false,
+        val finishedOn: String? = null,
+        val usedOn: List<String> = emptyList(),
     ) {
         fun toItem() = CosmeticItem(
             name = name,
@@ -87,10 +115,13 @@ object CollectionBackup {
             price = price,
             link = link,
             addedAtMillis = addedAtMillis,
+            shelfStatus = shelfStatus?.let { name -> ShelfStatus.entries.firstOrNull { it.name == name } },
+            favorite = favorite,
+            finishedOn = finishedOn?.let(LocalDate::parse),
         )
 
         companion object {
-            fun from(item: CosmeticItem) = BackupItem(
+            fun from(item: CosmeticItem, usedOn: List<LocalDate>) = BackupItem(
                 name = item.name,
                 brand = item.brand,
                 category = item.category.name,
@@ -112,6 +143,10 @@ object CollectionBackup {
                 price = item.price,
                 link = item.link,
                 addedAtMillis = item.addedAtMillis,
+                shelfStatus = item.shelfStatus?.name,
+                favorite = item.favorite,
+                finishedOn = item.finishedOn?.toString(),
+                usedOn = usedOn.map(LocalDate::toString),
             )
         }
     }

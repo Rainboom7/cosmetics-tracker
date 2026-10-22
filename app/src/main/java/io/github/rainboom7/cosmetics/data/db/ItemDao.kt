@@ -39,11 +39,12 @@ abstract class ItemDao {
     abstract suspend fun deleteAll()
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    abstract suspend fun insertAll(items: List<ItemEntity>)
+    abstract suspend fun insertAll(items: List<ItemEntity>): List<Long>
 
+    /** Deleting the items also deletes their usage marks (foreign key cascade). */
     @Transaction
-    open suspend fun replaceAll(items: List<ItemEntity>) {
+    open suspend fun replaceAll(items: List<ItemEntity>): List<Long> {
         deleteAll()
-        insertAll(items)
+        return insertAll(items)
     }
 }

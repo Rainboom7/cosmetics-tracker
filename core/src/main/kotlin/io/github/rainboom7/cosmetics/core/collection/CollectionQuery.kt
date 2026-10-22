@@ -2,6 +2,7 @@ package io.github.rainboom7.cosmetics.core.collection
 
 import io.github.rainboom7.cosmetics.core.model.Category
 import io.github.rainboom7.cosmetics.core.model.CosmeticItem
+import io.github.rainboom7.cosmetics.core.model.ShelfStatus
 import java.time.LocalDate
 
 enum class SortOrder { NEWEST, NAME, BRAND, EXPIRES_FIRST }
@@ -11,12 +12,18 @@ data class CollectionQuery(
     val text: String = "",
     val category: Category? = null,
     val sort: SortOrder = SortOrder.NEWEST,
+    /** Status chip; matches [CosmeticItem.effectiveShelfStatus], so automatic "Заканчивается" counts. */
+    val shelf: ShelfStatus? = null,
+    val favoritesOnly: Boolean = false,
 )
 
 fun List<CosmeticItem>.applyQuery(query: CollectionQuery): List<CosmeticItem> {
     val needle = query.text.trim().lowercase()
     val filtered = filter { item ->
-        (query.category == null || item.category == query.category) && item.matches(needle)
+        (query.category == null || item.category == query.category) &&
+            (query.shelf == null || item.effectiveShelfStatus() == query.shelf) &&
+            (!query.favoritesOnly || item.favorite) &&
+            item.matches(needle)
     }
     return when (query.sort) {
         SortOrder.NEWEST -> filtered.sortedByDescending { it.addedAtMillis }

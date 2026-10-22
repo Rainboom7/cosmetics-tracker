@@ -26,7 +26,7 @@ class RoomCollectionRepository(private val dao: ItemDao) : CollectionRepository 
 
     override suspend fun delete(id: Long) = dao.delete(id)
 
-    override suspend fun replaceAll(items: List<CosmeticItem>) =
+    override suspend fun replaceAll(items: List<CosmeticItem>): List<Long> =
         dao.replaceAll(items.map { ItemEntity.from(it.copy(id = 0)) })
 
     suspend fun getAll(): List<CosmeticItem> = dao.getAll().map(ItemEntity::toModel)

@@ -21,6 +21,6 @@ interface CollectionRepository {
 
     suspend fun delete(id: Long)
 
-    /** Replaces the whole collection, used by backup import. */
-    suspend fun replaceAll(items: List<CosmeticItem>)
+    /** Replaces the whole collection, used by backup import. Returns the new ids, in order. */
+    suspend fun replaceAll(items: List<CosmeticItem>): List<Long>
 }
