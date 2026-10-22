@@ -30,6 +30,8 @@ data class CollectionUiState(
     /** Counts for the status chips; a chip is shown only when its count is above 0 or it is selected. */
     val shelfCounts: Map<ShelfStatus, Int> = emptyMap(),
     val favoriteCount: Int = 0,
+    /** Owned items per category, for the counters on the category bubbles. */
+    val categoryCounts: Map<Category, Int> = emptyMap(),
 )
 
 class CollectionViewModel(private val service: CollectionService) : ViewModel() {
@@ -49,12 +51,14 @@ class CollectionViewModel(private val service: CollectionService) : ViewModel() 
             today = service.today(),
             shelfCounts = summary.shelfCounts,
             favoriteCount = summary.favoriteCount,
+            categoryCounts = owned.groupingBy { it.category }.eachCount(),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CollectionUiState())
 
     fun setText(text: String) = query.update { it.copy(text = text) }
 
-    fun setCategory(category: Category?) = query.update { it.copy(category = category) }
+    /** Category bubble tap; tapping the selected category again goes back to "Все". */
+    fun setCategory(category: Category?) = query.update { it.copy(category = if (it.category == category) null else category) }
 
     /** Status chip tap: selects [shelf], or clears it when it is already selected. */
     fun toggleShelf(shelf: ShelfStatus) = query.update { it.copy(shelf = if (it.shelf == shelf) null else shelf) }
@@ -62,7 +66,9 @@ class CollectionViewModel(private val service: CollectionService) : ViewModel() 
     fun toggleFavoritesOnly() = query.update { it.copy(favoritesOnly = !it.favoritesOnly) }
 
     companion object {
-        /** Filter chips on the collection screen, in order; null is "Все". */
-        val FILTER_CATEGORIES: List<Category?> = listOf(null, Category.SKINCARE, Category.MAKEUP, Category.HAIR, Category.BODY)
+        /** Category bubbles on the collection screen, in order; null is "Все". */
+        val FILTER_CATEGORIES: List<Category?> = listOf(
+            null, Category.SKINCARE, Category.MAKEUP, Category.HAIR, Category.BODY, Category.FRAGRANCE, Category.NAILS, Category.OTHER,
+        )
     }
 }

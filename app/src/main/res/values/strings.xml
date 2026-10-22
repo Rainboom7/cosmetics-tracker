@@ -222,4 +222,33 @@
         <item quantity="many">%1$d раз</item>
         <item quantity="other">%1$d раза</item>
     </plurals>
+    <!-- Design round 3 -->
+    <string name="condition_title">Состояние</string>
+    <string name="usage_other_day">Другой день</string>
+    <string name="usage_marked_on">Отмечено: %1$s</string>
+    <string name="calendar_today">Сегодня</string>
+    <plurals name="calendar_streak_label">
+        <item quantity="one">день подряд</item>
+        <item quantity="few">дня подряд</item>
+        <item quantity="many">дней подряд</item>
+        <item quantity="other">дня подряд</item>
+    </plurals>
+    <plurals name="calendar_active_label">
+        <item quantity="one">день с уходом</item>
+        <item quantity="few">дня с уходом</item>
+        <item quantity="many">дней с уходом</item>
+        <item quantity="other">дня с уходом</item>
+    </plurals>
+    <plurals name="calendar_empties_label">
+        <item quantity="one">пустая баночка за год</item>
+        <item quantity="few">пустые баночки за год</item>
+        <item quantity="many">пустых баночек за год</item>
+        <item quantity="other">пустой баночки за год</item>
+    </plurals>
+    <plurals name="calendar_day_count">
+        <item quantity="one">%1$d средство</item>
+        <item quantity="few">%1$d средства</item>
+        <item quantity="many">%1$d средств</item>
+        <item quantity="other">%1$d средства</item>
+    </plurals>
 </resources>

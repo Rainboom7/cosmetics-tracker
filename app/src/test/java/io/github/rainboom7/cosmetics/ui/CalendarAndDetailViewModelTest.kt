@@ -2,6 +2,7 @@ package io.github.rainboom7.cosmetics.ui
 
 import io.github.rainboom7.cosmetics.core.collection.CollectionService
 import io.github.rainboom7.cosmetics.core.collection.InMemoryCollectionRepository
+import io.github.rainboom7.cosmetics.core.model.Condition
 import io.github.rainboom7.cosmetics.core.model.CosmeticItem
 import io.github.rainboom7.cosmetics.core.model.ShelfStatus
 import io.github.rainboom7.cosmetics.core.model.UsageState
@@ -66,6 +67,9 @@ class CalendarAndDetailViewModelTest {
 
         vm.select(LocalDate.of(2026, 10, 21))
         assertEquals(listOf("Крем"), vm.state.value.selectedItems.map { it.name })
+        vm.setUsed(2, used = true) // a past day works the same as today
+        assertEquals(listOf("Крем", "Сыворотка"), vm.state.value.selectedItems.map { it.name })
+        assertTrue(LocalDate.of(2026, 10, 21) in log.observeForItem(2).first())
         vm.select(LocalDate.of(2026, 10, 30)) // future: ignored
         assertEquals(LocalDate.of(2026, 10, 21), vm.state.value.selected)
 
@@ -79,14 +83,18 @@ class CalendarAndDetailViewModelTest {
     }
 
     @Test
-    fun `detail toggles status, favorite and today's use`() = runTest(main.dispatcher) {
+    fun `detail sets the condition, favorite and marks any day`() = runTest(main.dispatcher) {
         val vm = DetailViewModel(1, service, photos = null, calendar = calendar)
         backgroundScope.launch { vm.state.collect {} }
 
-        vm.toggleShelf(ShelfStatus.TRYING)
+        vm.setCondition(Condition.TRYING)
         assertEquals(ShelfStatus.TRYING, repo.get(1)!!.shelfStatus)
-        vm.toggleShelf(ShelfStatus.TRYING)
+        vm.setCondition(Condition.OPENED)
         assertNull(repo.get(1)!!.shelfStatus)
+
+        vm.markUsedOn(LocalDate.of(2026, 10, 3))
+        assertTrue(LocalDate.of(2026, 10, 3) in log.observeForItem(1).first())
+        vm.markUsedOn(LocalDate.of(2026, 10, 3))
 
         vm.toggleFavorite()
         assertTrue(repo.get(1)!!.favorite)
@@ -94,8 +102,8 @@ class CalendarAndDetailViewModelTest {
         vm.toggleUsedToday()
         val loaded = vm.state.value as DetailState.Loaded
         assertTrue(loaded.usage.usedToday)
-        assertEquals(2, loaded.usage.last30Days)
-        assertEquals(listOf(today, LocalDate.of(2026, 10, 21)), log.observeForItem(1).first())
+        assertEquals(3, loaded.usage.last30Days)
+        assertEquals(listOf(today, LocalDate.of(2026, 10, 21), LocalDate.of(2026, 10, 3)), log.observeForItem(1).first())
     }
 
     @Test

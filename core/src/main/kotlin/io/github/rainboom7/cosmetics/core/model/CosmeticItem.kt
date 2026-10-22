@@ -22,6 +22,14 @@ enum class UsageState { NEW, OPENED, FINISHED }
 enum class ShelfStatus { STOCKED, RUNNING_LOW, TRYING, NOT_USING, GIVE_AWAY }
 
 /**
+ * The one status the user picks for an owned item ("Состояние" chips): the lifecycle
+ * ([UsageState]) and the shelf mark ([ShelfStatus]) folded into a single choice, so the card shows
+ * one question instead of two overlapping ones. See [CosmeticItem.condition] and
+ * `CollectionService.setCondition` for the mapping.
+ */
+enum class Condition { NEW, OPENED, TRYING, STOCKED, RUNNING_LOW, NOT_USING, GIVE_AWAY, FINISHED }
+
+/**
  * A product in the user's collection or wishlist. One table holds both lists; [status] tells
  * which. Owned-only fields ([usage], [remainingPercent], [openedOn]) are ignored for wishlist
  * items, wishlist-only fields ([wantBadly], [rebuy], [price], [link]) for owned ones.
@@ -103,6 +111,24 @@ data class CosmeticItem(
         shelfStatus != null -> shelfStatus
         usage == UsageState.OPENED && remainingPercent <= RUNNING_LOW_PERCENT -> ShelfStatus.RUNNING_LOW
         else -> null
+    }
+
+    /**
+     * The single status picked for an owned item, see [Condition]. Null for wishlist items. Uses the
+     * hand-set mark only, so the chips follow taps; the slider's automatic "Заканчивается" shows as
+     * the card badge and in the collection filter instead.
+     */
+    fun condition(): Condition? {
+        if (status != ItemStatus.OWNED) return null
+        if (usage == UsageState.FINISHED) return Condition.FINISHED
+        return when (shelfStatus) {
+            ShelfStatus.STOCKED -> Condition.STOCKED
+            ShelfStatus.RUNNING_LOW -> Condition.RUNNING_LOW
+            ShelfStatus.TRYING -> Condition.TRYING
+            ShelfStatus.NOT_USING -> Condition.NOT_USING
+            ShelfStatus.GIVE_AWAY -> Condition.GIVE_AWAY
+            null -> if (usage == UsageState.NEW) Condition.NEW else Condition.OPENED
+        }
     }
 
     /** The warning badge on a collection card, if any. Expiry is more urgent than running low. */
