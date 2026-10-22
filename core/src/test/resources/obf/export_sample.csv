@@ -1,0 +1,9 @@
+code	url	product_name	abbreviated_product_name	generic_name	quantity	brands	categories_tags	labels_tags	countries_en	unique_scans_n	completeness	image_url
+4005808890590	u	Nivea crème			150 ml	Nivea	en:non-food-products,en:open-beauty-facts,en:creams		France,Morocco	234	0.475	https://images.openbeautyfacts.org/images/products/400/580/889/0590/front_en.18.400.jpg
+4005900009340	u	Nivea Soft		Crème hydratante	200 ml	Nivea,Beiersdorf	en:face-creams	en:vegan	Germany	120	0.6	
+3600523614790	u	Elseve Total Repair 5 shampooing			250 ml	L'Oréal Paris,L'Oréal	en:shampoos		France	90	0.5	https://example.org/elseve.jpg
+3600541358534	u	Eau micellaire Skin Active		Micellar water	400 ml	Garnier	en:micellar-waters	en:cruelty-free	France	300	0.7	https://example.org/garnier.jpg
+4607034170138	u	Крем для рук Бархатные ручки			80 мл	Бархатные ручки	en:hand-creams		Russia	10	0.4	
+4600702079213	u	Чистая линия крем для лица			40 мл	Чистая линия	en:face-creams		Russia	5	0.3	
+3600531143199	u	Lash Sensational mascara			9.5 ml	Maybelline New York	en:mascaras		France	50	0.5	https://example.org/mascara.jpg
+0000000000001	u					Arnica			Italy	0	0.1	

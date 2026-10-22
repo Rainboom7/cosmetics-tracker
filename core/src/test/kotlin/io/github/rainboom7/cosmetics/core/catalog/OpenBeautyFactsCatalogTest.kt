@@ -68,6 +68,42 @@ class OpenBeautyFactsCatalogTest {
     }
 
     @Test
+    fun `product lookup brings card details, only non-blank ones`() = runTest {
+        server.enqueue(MockResponse().setBody(fixture("product_details.json")))
+
+        val product = catalog.findByBarcode("4005808890590")!!
+
+        assertTrue(server.takeRequest().requestUrl!!.queryParameter("fields")!!.contains("periods_after_opening"))
+        assertEquals("Aqua, Paraffinum Liquidum", product.ingredients) // blank Russian text falls through
+        val details = product.details!!
+        assertEquals("Универсальный увлажняющий крем", details.genericName)
+        assertEquals(listOf("Body creams"), details.visibleCategories)
+        assertEquals(listOf("Dermatologically tested"), details.visibleLabels)
+        assertEquals("France, Maroc, Pérou", details.countries)
+        assertEquals("Metal tin", details.packaging)
+        assertEquals("12 months", details.periodAfterOpening)
+        assertNull(details.origins)
+        assertNull(details.stores)
+        assertEquals("https://world.openbeautyfacts.org/product/4005808890590", details.pageUrl)
+    }
+
+    @Test
+    fun `rate limits are respected locally and reported from the server`() = runTest {
+        var now = 0L
+        val limited = OpenBeautyFactsCatalog(
+            client = OkHttpClient(),
+            userAgent = "test",
+            baseUrl = server.url("/"),
+            searchLimiter = RateLimiter(maxCalls = 1, windowMillis = 60_000) { now },
+        )
+        server.enqueue(MockResponse().setResponseCode(429))
+        assertTrue(runCatching { limited.search("aloe") }.exceptionOrNull() is CatalogRateLimitedException)
+        // The second call never reaches the server.
+        assertTrue(runCatching { limited.search("aloe") }.exceptionOrNull() is CatalogRateLimitedException)
+        assertEquals(1, server.requestCount)
+    }
+
+    @Test
     fun `blank query does not hit the network`() = runTest {
         val page = catalog.search("   ")
         assertTrue(page.products.isEmpty())

@@ -1,13 +1,16 @@
 package io.github.rainboom7.cosmetics
 
 import android.content.Context
+import io.github.rainboom7.cosmetics.core.catalog.CompositeCatalog
 import io.github.rainboom7.cosmetics.core.catalog.OpenBeautyFactsCatalog
 import io.github.rainboom7.cosmetics.core.catalog.ProductCatalog
 import io.github.rainboom7.cosmetics.core.collection.CollectionRepository
 import io.github.rainboom7.cosmetics.core.collection.CollectionService
 import io.github.rainboom7.cosmetics.core.photo.PhotoSearch
+import io.github.rainboom7.cosmetics.core.search.LocalIndexCatalog
 import io.github.rainboom7.cosmetics.core.usage.UsageCalendar
 import io.github.rainboom7.cosmetics.core.usage.UsageLogRepository
+import io.github.rainboom7.cosmetics.data.catalog.BundledIndexStore
 import io.github.rainboom7.cosmetics.data.db.AppDatabase
 import io.github.rainboom7.cosmetics.data.db.RoomCollectionRepository
 import io.github.rainboom7.cosmetics.data.db.RoomUsageLogRepository
@@ -42,13 +45,19 @@ class AppContainer(context: Context) {
 
     val usage: UsageCalendar by lazy { UsageCalendar(usageLog, collection) }
 
-    val catalog: ProductCatalog by lazy {
+    /** The Open Beauty Facts API: barcodes, product details, and search when the index finds little. */
+    val onlineCatalog: ProductCatalog by lazy {
         OpenBeautyFactsCatalog(
             client = okHttp,
             // Open Beauty Facts asks apps to identify themselves: AppName/Version (contact).
             userAgent = "CosmeticsTracker-Android/${BuildConfig.VERSION_NAME} (github.com/Rainboom7)",
         )
     }
+
+    /** Offline full-text search over the index bundled in the APK. */
+    val localCatalog: ProductCatalog by lazy { LocalIndexCatalog(BundledIndexStore(appContext)) }
+
+    val catalog: ProductCatalog by lazy { CompositeCatalog(localCatalog, onlineCatalog) }
 
     val photoSearch: PhotoSearch by lazy { PhotoSearch(catalog) }
 

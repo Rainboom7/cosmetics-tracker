@@ -13,4 +13,7 @@ interface ProductCatalog {
 }
 
 /** Network or parsing failure talking to a catalog. The message is for logs, not for users. */
-class CatalogException(message: String, cause: Throwable? = null) : Exception(message, cause)
+open class CatalogException(message: String, cause: Throwable? = null) : Exception(message, cause)
+
+/** The catalog asked us to slow down (HTTP 429/503), or our own limiter refused the call. */
+class CatalogRateLimitedException(message: String) : CatalogException(message)
