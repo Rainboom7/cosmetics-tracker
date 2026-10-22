@@ -41,6 +41,7 @@ import io.github.rainboom7.cosmetics.core.model.ItemStatus
 import io.github.rainboom7.cosmetics.ui.about.AboutRoute
 import io.github.rainboom7.cosmetics.ui.calendar.CalendarRoute
 import io.github.rainboom7.cosmetics.ui.catalog.CatalogRoute
+import io.github.rainboom7.cosmetics.ui.catalogcard.CatalogCardRoute
 import io.github.rainboom7.cosmetics.ui.collection.CollectionRoute
 import io.github.rainboom7.cosmetics.ui.detail.DetailRoute
 import io.github.rainboom7.cosmetics.ui.form.AddFormRoute
@@ -58,6 +59,7 @@ object Routes {
     const val ADD_SCAN = "add_scan?target={target}&mode={mode}"
     const val ADD_FORM = "add_form?target={target}&editId={editId}"
     const val ABOUT = "about"
+    const val CATALOG_PRODUCT = "catalog_product"
 
     fun catalog(query: String = "") = "catalog?query=${android.net.Uri.encode(query)}"
     fun product(id: Long) = "product/$id"
@@ -150,6 +152,7 @@ fun CosmeticsNavHost(navController: NavHostController = rememberNavController())
                         onScanBarcode = { navController.navigate(Routes.addScan()) },
                         onPhotoSearch = { navController.navigate(Routes.addScan(mode = ScanMode.PHOTO)) },
                         onAddManually = { navController.navigate(Routes.addForm()) },
+                        onOpenProduct = { navController.navigate(Routes.CATALOG_PRODUCT) },
                     )
                 }
             }
@@ -202,6 +205,7 @@ fun CosmeticsNavHost(navController: NavHostController = rememberNavController())
                     onOpenItem = { navController.navigate(Routes.product(it)) },
                 )
             }
+            composable(Routes.CATALOG_PRODUCT) { CatalogCardRoute(onBack = { navController.popBackStack() }) }
             composable(Routes.ABOUT) { AboutRoute(onBack = { navController.popBackStack() }) }
         }
     }

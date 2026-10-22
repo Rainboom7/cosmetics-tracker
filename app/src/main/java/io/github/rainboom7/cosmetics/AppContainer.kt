@@ -1,19 +1,23 @@
 package io.github.rainboom7.cosmetics
 
 import android.content.Context
+import io.github.rainboom7.cosmetics.core.catalog.CompositeCatalog
 import io.github.rainboom7.cosmetics.core.catalog.OpenBeautyFactsCatalog
 import io.github.rainboom7.cosmetics.core.catalog.ProductCatalog
 import io.github.rainboom7.cosmetics.core.collection.CollectionRepository
 import io.github.rainboom7.cosmetics.core.collection.CollectionService
 import io.github.rainboom7.cosmetics.core.photo.PhotoSearch
+import io.github.rainboom7.cosmetics.core.search.LocalIndexCatalog
 import io.github.rainboom7.cosmetics.core.usage.UsageCalendar
 import io.github.rainboom7.cosmetics.core.usage.UsageLogRepository
+import io.github.rainboom7.cosmetics.data.catalog.BundledIndexStore
 import io.github.rainboom7.cosmetics.data.db.AppDatabase
 import io.github.rainboom7.cosmetics.data.db.RoomCollectionRepository
 import io.github.rainboom7.cosmetics.data.db.RoomUsageLogRepository
 import io.github.rainboom7.cosmetics.data.photo.MlKitPhotoRecognizer
 import io.github.rainboom7.cosmetics.data.photo.PhotoRecognizer
 import io.github.rainboom7.cosmetics.data.photo.PhotoStorage
+import io.github.rainboom7.cosmetics.ui.catalogcard.CatalogSelection
 import io.github.rainboom7.cosmetics.ui.scan.AddFlowStore
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
@@ -42,7 +46,8 @@ class AppContainer(context: Context) {
 
     val usage: UsageCalendar by lazy { UsageCalendar(usageLog, collection) }
 
-    val catalog: ProductCatalog by lazy {
+    /** The Open Beauty Facts API: barcodes, product details, and search when the index finds little. */
+    val onlineCatalog: ProductCatalog by lazy {
         OpenBeautyFactsCatalog(
             client = okHttp,
             // Open Beauty Facts asks apps to identify themselves: AppName/Version (contact).
@@ -50,11 +55,19 @@ class AppContainer(context: Context) {
         )
     }
 
+    /** Offline full-text search over the index bundled in the APK. */
+    val localCatalog: ProductCatalog by lazy { LocalIndexCatalog(BundledIndexStore(appContext)) }
+
+    val catalog: ProductCatalog by lazy { CompositeCatalog(localCatalog, onlineCatalog) }
+
     val photoSearch: PhotoSearch by lazy { PhotoSearch(catalog) }
 
     val photoStorage: PhotoStorage by lazy { PhotoStorage(appContext) }
 
     val recognizer: PhotoRecognizer by lazy { MlKitPhotoRecognizer(appContext) }
+
+    /** Hands the tapped search result to the product card. */
+    val catalogSelection: CatalogSelection by lazy { CatalogSelection() }
 
     /** Hands a photo and its recognition from the scanner to the add form. */
     val addFlow: AddFlowStore by lazy { AddFlowStore() }

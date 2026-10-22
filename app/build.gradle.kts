@@ -47,6 +47,9 @@ android {
     lint {
         abortOnError = false
     }
+
+    // CI puts the Open Beauty Facts search index here (./gradlew -p core buildObfIndex), see ci.yml.
+    sourceSets["main"].assets.srcDir(layout.buildDirectory.dir("generated/obfIndex"))
 }
 
 kotlin {

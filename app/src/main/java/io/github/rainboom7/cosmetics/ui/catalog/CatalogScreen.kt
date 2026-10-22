@@ -1,6 +1,7 @@
 package io.github.rainboom7.cosmetics.ui.catalog
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,6 +61,7 @@ import io.github.rainboom7.cosmetics.core.model.Category
 import io.github.rainboom7.cosmetics.core.model.ItemStatus
 import io.github.rainboom7.cosmetics.ui.collection.SearchField
 import io.github.rainboom7.cosmetics.ui.components.EmptyState
+import io.github.rainboom7.cosmetics.ui.components.appContainer
 import io.github.rainboom7.cosmetics.ui.components.ItemImage
 import io.github.rainboom7.cosmetics.ui.components.appViewModel
 import io.github.rainboom7.cosmetics.ui.components.categoryLabel
@@ -70,8 +72,10 @@ fun CatalogRoute(
     onScanBarcode: () -> Unit,
     onPhotoSearch: () -> Unit,
     onAddManually: () -> Unit,
+    onOpenProduct: () -> Unit,
 ) {
     val viewModel = appViewModel(key = "catalog") { CatalogViewModel(it.catalog, it.collection, initialQuery) }
+    val selection = appContainer().catalogSelection
     val state by viewModel.state.collectAsStateWithLifecycle()
     val known by viewModel.known.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
@@ -103,6 +107,10 @@ fun CatalogRoute(
         onScanBarcode = onScanBarcode,
         onPhotoSearch = onPhotoSearch,
         onAddManually = onAddManually,
+        onOpen = { product ->
+            selection.product = product
+            onOpenProduct()
+        },
     )
 }
 
@@ -121,6 +129,7 @@ fun CatalogScreen(
     onScanBarcode: () -> Unit,
     onPhotoSearch: () -> Unit,
     onAddManually: () -> Unit,
+    onOpen: (CatalogProduct) -> Unit = {},
 ) {
     val listState = rememberLazyListState()
     LaunchedEffect(listState, state.hasMore) {
@@ -177,6 +186,7 @@ fun CatalogScreen(
                     wished = product.barcode != null && product.barcode in known.wishlist,
                     onWish = { onAdd(product, ItemStatus.WISHLIST) },
                     onAdd = { onAdd(product, ItemStatus.OWNED) },
+                    onOpen = { onOpen(product) },
                 )
             }
             if (state.loadingMore) {
@@ -246,9 +256,9 @@ private fun <T> DropdownChip(
 }
 
 @Composable
-private fun ProductRow(product: CatalogProduct, owned: Boolean, wished: Boolean, onWish: () -> Unit, onAdd: () -> Unit) {
+private fun ProductRow(product: CatalogProduct, owned: Boolean, wished: Boolean, onWish: () -> Unit, onAdd: () -> Unit, onOpen: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().testTag("catalog_row"),
+        Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).clickable(onClick = onOpen).testTag("catalog_row"),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {

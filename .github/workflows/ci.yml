@@ -37,6 +37,11 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
+      # The search index bundled in the APK, from the fresh Open Beauty Facts export (~18 MB).
+      # The app works without it (online search only), so a failed download does not fail CI.
+      - name: Build the Open Beauty Facts index
+        continue-on-error: true
+        run: ./gradlew -p core buildObfIndex -PobfIndexOut=$GITHUB_WORKSPACE/app/build/generated/obfIndex/obf-index.db
       # ubuntu-latest ships the Android SDK; AGP downloads missing platforms itself.
       - run: ./gradlew :app:assembleDebug :app:testDebugUnitTest --stacktrace
       - uses: actions/upload-artifact@v4
