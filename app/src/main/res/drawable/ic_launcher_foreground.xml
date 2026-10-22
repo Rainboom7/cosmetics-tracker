@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A cream jar with a lid, in the brand primary color. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="@color/primary"
+        android:pathData="M36,40h36a4,4 0,0 1,4 4v4h-44v-4a4,4 0,0 1,4 -4z" />
+    <path
+        android:fillColor="@color/primary"
+        android:pathData="M34,52h40v16a8,8 0,0 1,-8 8h-24a8,8 0,0 1,-8 -8z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M42,60h24v3h-24z" />
+</vector>

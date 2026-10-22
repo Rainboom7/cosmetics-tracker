@@ -1,0 +1,13 @@
+{
+  "code": "3600523307593",
+  "status": 1,
+  "status_verbose": "product found",
+  "product": {
+    "code": "3600523307593",
+    "product_name": "Hydra Genius Aloe Water",
+    "brands": "L'Oréal Paris",
+    "quantity": "70 ml",
+    "image_front_url": "https://images.openbeautyfacts.org/images/products/360/052/330/7593/front_fr.4.400.jpg",
+    "categories_tags": ["en:face-creams"]
+  }
+}

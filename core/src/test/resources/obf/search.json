@@ -1,0 +1,42 @@
+{
+  "count": 30,
+  "page": 1,
+  "page_count": 3,
+  "page_size": 24,
+  "products": [
+    {
+      "code": "3600523307593",
+      "product_name": "Hydra Genius Aloe Water",
+      "brands": "L'Oréal Paris, L'Oréal",
+      "quantity": "70 ml",
+      "image_front_url": "https://images.openbeautyfacts.org/images/products/360/052/330/7593/front_fr.4.400.jpg",
+      "categories_tags": ["en:skin-care", "en:face-creams"],
+      "unknown_field": {"nested": true}
+    },
+    {
+      "code": "3600531143213",
+      "product_name": "",
+      "product_name_en": "Volume Million Lashes mascara",
+      "brands": "Maybelline",
+      "image_url": "https://images.openbeautyfacts.org/images/products/360/053/114/3213/front_en.3.400.jpg",
+      "categories_tags": ["en:mascaras"]
+    },
+    {
+      "code": "1234",
+      "brands": "No name at all"
+    },
+    {
+      "code": "3600523307593",
+      "product_name": "Duplicate of first",
+      "categories_tags": []
+    },
+    {
+      "code": "4005900036650",
+      "product_name_ru": "Крем для рук",
+      "product_name": "Hand cream",
+      "brands": "Nivea",
+      "image_front_url": null,
+      "categories_tags": null
+    }
+  ]
+}
