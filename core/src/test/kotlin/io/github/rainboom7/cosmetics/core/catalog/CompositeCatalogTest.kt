@@ -91,4 +91,13 @@ class CompositeCatalogTest {
         remote.failure = null
         assertNull(catalog.findByBarcode("4006381333931"))
     }
+
+    @Test
+    fun `barcodes unknown to beauty facts are looked up in the fallbacks`() = runTest {
+        val fallback = Source(listOf(product("Bioaqua mask", "6901234567892")))
+        val catalog = CompositeCatalog(Source(), Source(), barcodeFallbacks = listOf(fallback))
+        assertEquals("Bioaqua mask", catalog.findByBarcode("6901234567892")?.name)
+        assertNull(catalog.findByBarcode("4006381333931"))
+        assertEquals(2, fallback.lookups)
+    }
 }

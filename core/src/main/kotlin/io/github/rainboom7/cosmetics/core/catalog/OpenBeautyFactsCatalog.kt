@@ -10,6 +10,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
@@ -30,7 +31,15 @@ class OpenBeautyFactsCatalog(
     /** The API allows about 10 searches a minute per IP; going over risks a ban. */
     private val searchLimiter: RateLimiter = RateLimiter(maxCalls = 10, windowMillis = 60_000),
     private val productLimiter: RateLimiter = RateLimiter(maxCalls = 15, windowMillis = 60_000),
+    /**
+     * Product reads use API v2 on Open Beauty Facts. The Open Food Facts fallback uses v3 with
+     * `product_type=all`, which redirects to whichever Open*Facts database has the barcode.
+     */
+    private val productApi: ProductApi = ProductApi.V2,
+    private val source: String = SOURCE,
 ) : ProductCatalog {
+
+    enum class ProductApi { V2, V3_ANY_PRODUCT_TYPE }
 
     override suspend fun search(query: String, page: Int): CatalogPage {
         require(page >= 1) { "page starts at 1" }
@@ -56,14 +65,15 @@ class OpenBeautyFactsCatalog(
         val code = Barcodes.normalize(barcode) ?: return null
         if (!productLimiter.tryAcquire()) throw CatalogRateLimitedException("Product limit reached")
         val url = baseUrl.newBuilder()
-            .addPathSegments("api/v2/product")
+            .addPathSegments(if (productApi == ProductApi.V2) "api/v2/product" else "api/v3/product")
             .addPathSegment(code)
             .addQueryParameter("fields", PRODUCT_FIELDS)
+            .apply { if (productApi == ProductApi.V3_ANY_PRODUCT_TYPE) addQueryParameter("product_type", "all") }
             .build()
         val body = get(url, allowNotFound = true) ?: return null
         val response = decode<ProductResponse>(body, url)
-        if (response.status != 1) return null
-        return response.product?.toCatalogProduct()
+        if (!response.found) return null
+        return response.product?.toCatalogProduct(source)
     }
 
     private suspend fun get(url: HttpUrl): String = get(url, allowNotFound = false)!!
@@ -100,9 +110,12 @@ class OpenBeautyFactsCatalog(
 
     @Serializable
     internal data class ProductResponse(
-        val status: Int = 0,
+        /** 1 or 0 in API v2; "success" / "failure" in v3. */
+        val status: JsonPrimitive? = null,
         val product: ProductDto? = null,
-    )
+    ) {
+        val found: Boolean get() = status?.content == "1" || status?.content == "success"
+    }
 
     @Serializable
     internal data class ProductDto(
@@ -128,7 +141,7 @@ class OpenBeautyFactsCatalog(
         @SerialName("periods_after_opening") val periodsAfterOpening: String? = null,
         val stores: String? = null,
     ) {
-        fun toCatalogProduct(): CatalogProduct? {
+        fun toCatalogProduct(source: String = SOURCE): CatalogProduct? {
             val name = listOf(productNameRu, productName, productNameEn, genericName)
                 .firstOrNull { !it.isNullOrBlank() }?.trim() ?: return null
             return CatalogProduct(
@@ -139,12 +152,12 @@ class OpenBeautyFactsCatalog(
                 category = CategoryClassifier.classify(categoriesTags, name),
                 quantity = quantity?.trim()?.takeIf { it.isNotEmpty() },
                 ingredients = listOf(ingredientsTextRu, ingredientsText).firstOrNull { !it.isNullOrBlank() }?.trim(),
-                source = SOURCE,
-                details = details(name),
+                source = source,
+                details = details(name, source),
             )
         }
 
-        private fun details(name: String): CatalogProduct.Details? {
+        private fun details(name: String, source: String): CatalogProduct.Details? {
             fun String?.clean() = this?.trim()?.takeIf { it.isNotEmpty() }
             val generic = listOf(genericNameRu, genericName).firstOrNull { !it.isNullOrBlank() }.clean()
             return CatalogProduct.Details(
@@ -157,13 +170,17 @@ class OpenBeautyFactsCatalog(
                 packaging = packaging.clean(),
                 periodAfterOpening = periodsAfterOpening.clean(),
                 stores = stores.clean(),
-                pageUrl = code?.takeIf { it.isNotBlank() }?.let { "https://world.openbeautyfacts.org/product/$it" },
+                pageUrl = code?.takeIf { it.isNotBlank() }?.let {
+                    if (source == SOURCE) "https://world.openbeautyfacts.org/product/$it" else "https://world.openfoodfacts.org/product/$it"
+                },
             ).takeUnless { it.isEmpty }
         }
     }
 
     companion object {
         const val SOURCE = "openbeautyfacts"
+        const val OPEN_FACTS_SOURCE = "openfoodfacts"
+        const val OPEN_FOOD_FACTS_URL = "https://world.openfoodfacts.org/"
         const val DEFAULT_BASE_URL = "https://world.openbeautyfacts.org/"
         const val DEFAULT_PAGE_SIZE = 24
         internal const val FIELDS =

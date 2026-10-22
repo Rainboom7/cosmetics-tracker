@@ -19,6 +19,7 @@ import io.github.rainboom7.cosmetics.data.photo.PhotoRecognizer
 import io.github.rainboom7.cosmetics.data.photo.PhotoStorage
 import io.github.rainboom7.cosmetics.ui.catalogcard.CatalogSelection
 import io.github.rainboom7.cosmetics.ui.scan.AddFlowStore
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
@@ -58,7 +59,20 @@ class AppContainer(context: Context) {
     /** Offline full-text search over the index bundled in the APK. */
     val localCatalog: ProductCatalog by lazy { LocalIndexCatalog(BundledIndexStore(appContext)) }
 
-    val catalog: ProductCatalog by lazy { CompositeCatalog(localCatalog, onlineCatalog) }
+    /** Some cosmetics live in Open Food Facts / Open Products Facts; asked only by barcode. */
+    private val openFactsFallback: ProductCatalog by lazy {
+        OpenBeautyFactsCatalog(
+            client = okHttp,
+            userAgent = "CosmeticsTracker-Android/${BuildConfig.VERSION_NAME} (github.com/Rainboom7)",
+            baseUrl = OpenBeautyFactsCatalog.OPEN_FOOD_FACTS_URL.toHttpUrl(),
+            productApi = OpenBeautyFactsCatalog.ProductApi.V3_ANY_PRODUCT_TYPE,
+            source = OpenBeautyFactsCatalog.OPEN_FACTS_SOURCE,
+        )
+    }
+
+    val catalog: ProductCatalog by lazy {
+        CompositeCatalog(localCatalog, onlineCatalog, barcodeFallbacks = listOf(openFactsFallback))
+    }
 
     val photoSearch: PhotoSearch by lazy { PhotoSearch(catalog) }
 

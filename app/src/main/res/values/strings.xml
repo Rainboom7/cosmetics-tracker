@@ -256,8 +256,8 @@
     <string name="catalog_card_description">Описание</string>
     <string name="catalog_card_specs">Характеристики</string>
     <string name="catalog_card_ingredients">Состав</string>
-    <string name="catalog_card_source">Данные и фото: Open Beauty Facts (ODbL, CC BY-SA)</string>
-    <string name="catalog_card_open_site">Открыть на Open Beauty Facts</string>
+    <string name="catalog_card_source">Данные и фото: Open Beauty Facts / Open Food Facts (ODbL, CC BY-SA)</string>
+    <string name="catalog_card_open_site">Открыть страницу товара в базе</string>
     <string name="spec_categories">Категории</string>
     <string name="spec_labels">Отметки</string>
     <string name="spec_pao">Срок после вскрытия</string>

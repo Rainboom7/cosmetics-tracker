@@ -10,13 +10,16 @@ import kotlinx.coroutines.withTimeoutOrNull
  * Searches the bundled index first and asks the online API only when the index finds little,
  * so the API's small rate limit is kept for barcodes. Results are merged without duplicates
  * (same barcode, or same brand and name). Barcode lookups prefer the API, which is fresher and
- * has ingredients, and fall back to the index offline.
+ * has ingredients, fall back to the index offline, then to [barcodeFallbacks] (Open Food
+ * Facts / Open Products Facts, where some cosmetics end up).
  */
 class CompositeCatalog(
     private val local: ProductCatalog?,
     private val remote: ProductCatalog,
     private val enoughLocal: Int = 8,
     private val remoteTimeoutMillis: Long = 6_000,
+    /** Barcode-only sources asked when neither the API nor the index knows the code. */
+    private val barcodeFallbacks: List<ProductCatalog> = emptyList(),
 ) : ProductCatalog {
 
     override suspend fun search(query: String, page: Int): CatalogPage {
@@ -46,6 +49,9 @@ class CompositeCatalog(
         online.getOrNull()?.let { return it }
         val offline = local?.let { attempt { it.findByBarcode(barcode) }.getOrNull() }
         if (offline != null) return offline
+        for (fallback in barcodeFallbacks) {
+            attempt { fallback.findByBarcode(barcode) }.getOrNull()?.let { return it }
+        }
         // Neither knows it: report the API failure if there was one, so the UI can say "offline".
         online.exceptionOrNull()?.let { throw it }
         return null
