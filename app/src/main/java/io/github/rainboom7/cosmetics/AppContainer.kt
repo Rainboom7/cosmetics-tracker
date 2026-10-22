@@ -17,6 +17,7 @@ import io.github.rainboom7.cosmetics.data.db.RoomUsageLogRepository
 import io.github.rainboom7.cosmetics.data.photo.MlKitPhotoRecognizer
 import io.github.rainboom7.cosmetics.data.photo.PhotoRecognizer
 import io.github.rainboom7.cosmetics.data.photo.PhotoStorage
+import io.github.rainboom7.cosmetics.ui.catalogcard.CatalogSelection
 import io.github.rainboom7.cosmetics.ui.scan.AddFlowStore
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
@@ -64,6 +65,9 @@ class AppContainer(context: Context) {
     val photoStorage: PhotoStorage by lazy { PhotoStorage(appContext) }
 
     val recognizer: PhotoRecognizer by lazy { MlKitPhotoRecognizer(appContext) }
+
+    /** Hands the tapped search result to the product card. */
+    val catalogSelection: CatalogSelection by lazy { CatalogSelection() }
 
     /** Hands a photo and its recognition from the scanner to the add form. */
     val addFlow: AddFlowStore by lazy { AddFlowStore() }

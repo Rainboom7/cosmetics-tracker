@@ -9,6 +9,10 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.rainboom7.cosmetics.AppContainer
 import io.github.rainboom7.cosmetics.CosmeticsApp
 
+/** The app's [AppContainer], for in-memory hand-offs between screens. */
+@Composable
+fun appContainer(): AppContainer = (LocalContext.current.applicationContext as CosmeticsApp).container
+
 /** `viewModel()` that builds the ViewModel from the app's [AppContainer]. */
 @Composable
 inline fun <reified VM : ViewModel> appViewModel(

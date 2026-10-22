@@ -16,24 +16,10 @@ import java.io.IOException
  * version. Builds without the asset (local builds) simply find nothing and the app searches
  * online. All methods block: call them off the main thread.
  */
-class BundledIndexStore(context: Context, private val asset: String = ASSET) : IndexStore {
+class BundledIndexStore(context: Context, private val asset: String = ASSET) : SqliteIndexStore() {
     private val appContext = context.applicationContext
-    private val db: SQLiteDatabase? by lazy { open() }
 
-    override fun matchIds(expression: String): Set<Long> =
-        db?.rawQuery(IndexSchema.MATCH_IDS, arrayOf(expression))?.use { c ->
-            buildSet { while (c.moveToNext()) add(c.getLong(0)) }
-        }.orEmpty()
-
-    override fun products(ids: Collection<Long>): List<IndexedProduct> {
-        if (ids.isEmpty()) return emptyList()
-        return db?.rawQuery(IndexSchema.byIds(ids), null)?.use(::readAll).orEmpty()
-    }
-
-    override fun byCode(code: String): IndexedProduct? =
-        db?.rawQuery(IndexSchema.BY_CODE, arrayOf(code))?.use(::readAll)?.firstOrNull()
-
-    private fun open(): SQLiteDatabase? = try {
+    override fun open(): SQLiteDatabase? = try {
         val version = appContext.packageManager.getPackageInfo(appContext.packageName, 0).lastUpdateTime
         val dir = File(appContext.noBackupFilesDir, "obf-index").apply { mkdirs() }
         val file = File(dir, "index-$version.db")
@@ -56,6 +42,31 @@ class BundledIndexStore(context: Context, private val asset: String = ASSET) : I
         partial.renameTo(target)
     }
 
+    companion object {
+        const val ASSET = "obf-index.db"
+        private const val TAG = "BundledIndexStore"
+    }
+}
+
+/** [IndexStore] over an Android SQLite database opened on first use; a null database finds nothing. */
+abstract class SqliteIndexStore : IndexStore {
+    private val db: SQLiteDatabase? by lazy { open() }
+
+    protected abstract fun open(): SQLiteDatabase?
+
+    override fun matchIds(expression: String): Set<Long> =
+        db?.rawQuery(IndexSchema.MATCH_IDS, arrayOf(expression))?.use { c ->
+            buildSet { while (c.moveToNext()) add(c.getLong(0)) }
+        }.orEmpty()
+
+    override fun products(ids: Collection<Long>): List<IndexedProduct> {
+        if (ids.isEmpty()) return emptyList()
+        return db?.rawQuery(IndexSchema.byIds(ids), null)?.use(::readAll).orEmpty()
+    }
+
+    override fun byCode(code: String): IndexedProduct? =
+        db?.rawQuery(IndexSchema.BY_CODE, arrayOf(code))?.use(::readAll)?.firstOrNull()
+
     private fun readAll(c: Cursor): List<IndexedProduct> = buildList {
         while (c.moveToNext()) {
             add(
@@ -66,10 +77,5 @@ class BundledIndexStore(context: Context, private val asset: String = ASSET) : I
                 ),
             )
         }
-    }
-
-    companion object {
-        const val ASSET = "obf-index.db"
-        private const val TAG = "BundledIndexStore"
     }
 }
