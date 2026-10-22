@@ -7,13 +7,16 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -249,7 +252,8 @@ private fun DayCell(date: LocalDate, state: CalendarUiState, onSelect: (LocalDat
 /** Streak, active days, empties: three soft tiles. */
 @Composable
 private fun StatsRow(state: CalendarUiState) {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+    // Equal heights: the tallest label (often "N пустых баночек…") sets the row height.
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
         StatTile(
             pluralStringResource(R.plurals.calendar_streak, state.usage.streak, state.usage.streak),
             MaterialTheme.colorScheme.primaryContainer,
@@ -273,9 +277,9 @@ private fun StatsRow(state: CalendarUiState) {
 
 @Composable
 private fun StatTile(text: String, container: androidx.compose.ui.graphics.Color, ink: androidx.compose.ui.graphics.Color, modifier: Modifier) {
-    Surface(color = container, contentColor = ink, shape = MaterialTheme.shapes.medium, modifier = modifier.height(76.dp)) {
+    Surface(color = container, contentColor = ink, shape = MaterialTheme.shapes.medium, modifier = modifier.fillMaxHeight().heightIn(min = 76.dp)) {
         Box(Modifier.padding(12.dp), contentAlignment = Alignment.CenterStart) {
-            Text(text, style = MaterialTheme.typography.labelLarge, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            Text(text, style = MaterialTheme.typography.labelLarge)
         }
     }
 }

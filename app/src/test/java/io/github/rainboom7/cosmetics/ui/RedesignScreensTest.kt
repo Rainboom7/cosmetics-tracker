@@ -30,7 +30,7 @@ import java.time.YearMonth
 
 /** Screens added or reworked in the pastel redesign: statuses, favorites, usage calendar. */
 @RunWith(AndroidJUnit4::class)
-@Config(qualifiers = "w411dp-h891dp")
+@Config(qualifiers = "ru-w411dp-h891dp")
 class RedesignScreensTest {
     @get:Rule
     val compose = createComposeRule()
@@ -78,13 +78,14 @@ class RedesignScreensTest {
                 )
             }
         }
+        // The top buttons scroll away with the photo, so press the heart first.
+        compose.onNodeWithTag("favorite_button", useUnmergedTree = true).performClick()
+        assertEquals(true, favorite)
         compose.onNodeWithText("Последний раз: 20 октября").assertExists()
         compose.onNodeWithText("Есть запас").performScrollTo().performClick()
         assertEquals(ShelfStatus.STOCKED, shelf)
         compose.onNodeWithTag("used_today").performScrollTo().performClick()
         assertEquals(true, marked)
-        compose.onNodeWithTag("favorite_button", useUnmergedTree = true).performClick()
-        assertEquals(true, favorite)
     }
 
     @Test
