@@ -1,5 +1,7 @@
 package io.github.rainboom7.cosmetics.ui.collection
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -22,6 +25,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Bathtub
+import androidx.compose.material.icons.outlined.Brush
+import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.compose.material.icons.outlined.ContentCut
+import androidx.compose.material.icons.outlined.LocalFlorist
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Spa
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.HourglassBottom
 import androidx.compose.material.icons.outlined.Info
@@ -30,8 +41,6 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -45,7 +54,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -55,17 +67,19 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.rainboom7.cosmetics.R
 import io.github.rainboom7.cosmetics.core.model.Category
+import io.github.rainboom7.cosmetics.core.model.Condition
 import io.github.rainboom7.cosmetics.core.model.CosmeticItem
 import io.github.rainboom7.cosmetics.core.model.ItemBadge
 import io.github.rainboom7.cosmetics.core.model.ShelfStatus
 import io.github.rainboom7.cosmetics.ui.components.BadgeLabel
 import io.github.rainboom7.cosmetics.ui.components.EmptyState
 import io.github.rainboom7.cosmetics.ui.components.ItemImage
-import io.github.rainboom7.cosmetics.ui.components.StatusPill
+import io.github.rainboom7.cosmetics.ui.components.ConditionPill
 import io.github.rainboom7.cosmetics.ui.components.appViewModel
 import io.github.rainboom7.cosmetics.ui.components.categoryLabel
 import io.github.rainboom7.cosmetics.ui.components.openedLine
 import io.github.rainboom7.cosmetics.ui.components.shelfLabel
+import io.github.rainboom7.cosmetics.ui.theme.Candy
 import io.github.rainboom7.cosmetics.ui.theme.Spacing
 import io.github.rainboom7.cosmetics.ui.theme.tone
 import io.github.rainboom7.cosmetics.core.model.UsageState
@@ -146,21 +160,8 @@ fun CollectionScreen(
                 )
             }
             item(span = { GridItemSpan(maxLineSpan) }) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(CollectionViewModel.FILTER_CATEGORIES) { category ->
-                            FilterChip(
-                                selected = state.query.category == category,
-                                onClick = { onCategory(category) },
-                                label = {
-                                    Text(if (category == null) stringResource(R.string.filter_all_count, state.totalCount) else categoryLabel(category))
-                                },
-                                shape = CircleShape,
-                                colors = softChipColors(),
-                                border = null,
-                            )
-                        }
-                    }
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    CategoryBubbles(state, onCategory)
                     StatusChips(state, onShelf, onFavoritesOnly)
                 }
             }
@@ -202,56 +203,137 @@ fun CollectionScreen(
     }
 }
 
-/** Unselected chips are soft filled pills without outlines; selected ones use the pastel primary. */
-@Composable
-fun softChipColors(
-    selectedContainer: Color = MaterialTheme.colorScheme.primaryContainer,
-    selectedLabel: Color = MaterialTheme.colorScheme.onPrimaryContainer,
-) = FilterChipDefaults.filterChipColors(
-    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-    iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-    selectedContainerColor = selectedContainer,
-    selectedLabelColor = selectedLabel,
-    selectedLeadingIconColor = selectedLabel,
-)
+private fun categoryIcon(category: Category?): ImageVector = when (category) {
+    null -> Icons.Outlined.AutoAwesome
+    Category.SKINCARE -> Icons.Outlined.Spa
+    Category.MAKEUP -> Icons.Outlined.Brush
+    Category.HAIR -> Icons.Outlined.ContentCut
+    Category.BODY -> Icons.Outlined.Bathtub
+    Category.FRAGRANCE -> Icons.Outlined.LocalFlorist
+    Category.NAILS -> Icons.Outlined.Palette
+    Category.OTHER -> Icons.Outlined.MoreHoriz
+}
 
-/** "♡ Любимое" and one chip per status that has items; hidden while nothing is marked. */
+/**
+ * Categories as big round pastel bubbles with an icon, name and counter: easy to hit and to tell
+ * apart at a glance. Tapping the selected bubble again returns to "Все"; empty categories fade.
+ */
 @Composable
-private fun StatusChips(state: CollectionUiState, onShelf: (ShelfStatus) -> Unit, onFavoritesOnly: () -> Unit) {
-    val shelves = ShelfStatus.entries.filter { (state.shelfCounts[it] ?: 0) > 0 || state.query.shelf == it }
-    val showFavorites = state.favoriteCount > 0 || state.query.favoritesOnly
-    if (shelves.isEmpty() && !showFavorites) return
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("status_chips")) {
-        if (showFavorites) {
-            item {
-                FilterChip(
-                    selected = state.query.favoritesOnly,
-                    onClick = onFavoritesOnly,
-                    label = { Text(stringResource(R.string.shelf_count, stringResource(R.string.filter_favorites), state.favoriteCount)) },
-                    leadingIcon = {
-                        Icon(
-                            if (state.query.favoritesOnly) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                        )
-                    },
-                    shape = CircleShape,
-                    colors = softChipColors(),
-                    border = null,
+private fun CategoryBubbles(state: CollectionUiState, onCategory: (Category?) -> Unit) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("category_bubbles")) {
+        items(CollectionViewModel.FILTER_CATEGORIES) { category ->
+            val selected = state.query.category == category
+            val count = if (category == null) state.totalCount else state.categoryCounts[category] ?: 0
+            val (tone, ink) = if (category == null) Candy.blush to Candy.ink else category.tone().let { it.tone to it.ink }
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier
+                    .width(72.dp)
+                    .clip(MaterialTheme.shapes.medium)
+                    .clickable { onCategory(category) }
+                    .padding(vertical = 4.dp)
+                    .alpha(if (count == 0 && !selected) 0.5f else 1f)
+                    .testTag("category_" + (category?.name ?: "ALL")),
+            ) {
+                Box(Modifier.size(64.dp)) {
+                    Box(
+                        Modifier
+                            .align(Alignment.Center)
+                            .size(58.dp)
+                            .clip(CircleShape)
+                            .background(tone)
+                            .then(if (selected) Modifier.border(2.5.dp, MaterialTheme.colorScheme.primary, CircleShape) else Modifier),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(categoryIcon(category), contentDescription = null, tint = ink, modifier = Modifier.size(26.dp))
+                    }
+                    if (count > 0) {
+                        Surface(
+                            shape = CircleShape,
+                            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerLowest,
+                            contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            shadowElevation = 1.dp,
+                            modifier = Modifier.align(Alignment.TopEnd),
+                        ) {
+                            Text(count.toString(), style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp))
+                        }
+                    }
+                }
+                Text(
+                    if (category == null) stringResource(R.string.filter_all) else categoryLabel(category),
+                    style = MaterialTheme.typography.labelMedium.copy(letterSpacing = MaterialTheme.typography.labelSmall.letterSpacing),
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
-        items(shelves) { shelf ->
-            val tone = shelf.tone()
-            FilterChip(
-                selected = state.query.shelf == shelf,
-                onClick = { onShelf(shelf) },
-                label = { Text(stringResource(R.string.shelf_count, shelfLabel(shelf), state.shelfCounts[shelf] ?: 0)) },
-                shape = CircleShape,
-                colors = softChipColors(selectedContainer = tone.tone, selectedLabel = tone.ink),
-                border = null,
+    }
+}
+
+/**
+ * "♡ Любимое" and every status as soft pills with a colored dot and counter. Selected pills fill
+ * with their pastel; tapping again clears. Statuses with no items stay visible but faded.
+ */
+@Composable
+private fun StatusChips(state: CollectionUiState, onShelf: (ShelfStatus) -> Unit, onFavoritesOnly: () -> Unit) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("status_chips")) {
+        item {
+            FilterPill(
+                label = stringResource(R.string.filter_favorites),
+                count = state.favoriteCount,
+                selected = state.query.favoritesOnly,
+                tone = Candy.blush,
+                ink = Candy.ink,
+                onClick = onFavoritesOnly,
+                icon = if (state.query.favoritesOnly) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
             )
+        }
+        items(ShelfStatus.entries) { shelf ->
+            val tone = shelf.tone()
+            FilterPill(
+                label = shelfLabel(shelf),
+                count = state.shelfCounts[shelf] ?: 0,
+                selected = state.query.shelf == shelf,
+                tone = tone.tone,
+                ink = tone.ink,
+                onClick = { onShelf(shelf) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun FilterPill(
+    label: String,
+    count: Int,
+    selected: Boolean,
+    tone: Color,
+    ink: Color,
+    onClick: () -> Unit,
+    icon: ImageVector? = null,
+) {
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = if (selected) tone else MaterialTheme.colorScheme.surfaceContainerLowest,
+        contentColor = if (selected) ink else MaterialTheme.colorScheme.onSurfaceVariant,
+        border = if (selected) null else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier.height(36.dp).alpha(if (count == 0 && !selected) 0.55f else 1f),
+    ) {
+        Row(
+            Modifier.padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            if (icon != null) {
+                Icon(icon, contentDescription = null, tint = if (selected) ink else MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+            } else {
+                Box(Modifier.size(8.dp).background(if (selected) ink else tone, CircleShape).border(1.dp, ink.copy(alpha = 0.35f), CircleShape))
+            }
+            Text(stringResource(R.string.shelf_count, label, count), style = MaterialTheme.typography.labelLarge, maxLines = 1)
         }
     }
 }
@@ -322,10 +404,11 @@ private fun CollectionCard(item: CosmeticItem, today: LocalDate, onClick: () -> 
                 Text(it.uppercase(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Text(item.name, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            // The badge already says "Заканчивается"; don't repeat it as a pill.
-            item.effectiveShelfStatus()
-                ?.takeUnless { it == ShelfStatus.RUNNING_LOW && badge == ItemBadge.RUNNING_LOW }
-                ?.let { StatusPill(it, Modifier.padding(top = 2.dp)) }
+            // New and opened are the default and need no pill; the badge already says "Заканчивается".
+            item.condition()
+                ?.takeUnless { it == Condition.NEW || it == Condition.OPENED }
+                ?.takeUnless { it == Condition.RUNNING_LOW && badge == ItemBadge.RUNNING_LOW }
+                ?.let { ConditionPill(it, Modifier.padding(top = 2.dp)) }
             if (item.usage == UsageState.OPENED) {
                 Spacer(Modifier.size(2.dp))
                 LinearProgressIndicator(
