@@ -22,34 +22,35 @@ import io.github.rainboom7.cosmetics.core.model.Category
 import io.github.rainboom7.cosmetics.core.model.Condition
 import io.github.rainboom7.cosmetics.core.model.ShelfStatus
 
-// Pastel palette from the design spec, v2 ("Пудра"): dusty rose primary, lavender secondary,
-// mint tertiary on a warm off-white. Text roles keep at least 4.5:1 contrast on their containers.
+// Palette v3 «Облако»: a warm raspberry-pink primary (white text keeps 4.7:1) on cloud-white
+// surfaces with a blush tint, after the Podruzhka app's white-and-pink look. Lilac and mint stay as
+// quiet accents; text roles keep at least 4.5:1 contrast on their containers.
 private val LightColors = lightColorScheme(
-    primary = Color(0xFF9C5B73),
+    primary = Color(0xFFCC3D72),
     onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFFFDDE8),
+    primaryContainer = Color(0xFFFFDCE7),
     onPrimaryContainer = Color(0xFF3E1424),
-    secondary = Color(0xFF6E5F80),
+    secondary = Color(0xFF7A5A8C),
     onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFFECE5F6),
-    onSecondaryContainer = Color(0xFF2C2238),
-    tertiary = Color(0xFF4A7565),
+    secondaryContainer = Color(0xFFF1E6F8),
+    onSecondaryContainer = Color(0xFF2E1F3A),
+    tertiary = Color(0xFF3F7A66),
     onTertiary = Color(0xFFFFFFFF),
-    tertiaryContainer = Color(0xFFDCF1E6),
+    tertiaryContainer = Color(0xFFDDF3E8),
     onTertiaryContainer = Color(0xFF0F2A20),
-    background = Color(0xFFFFF8FA),
-    onBackground = Color(0xFF2A2125),
-    surface = Color(0xFFFFF8FA),
-    onSurface = Color(0xFF2A2125),
-    surfaceVariant = Color(0xFFF3E7EA),
-    onSurfaceVariant = Color(0xFF6A5A60),
+    background = Color(0xFFFFF9FB),
+    onBackground = Color(0xFF2E1F25),
+    surface = Color(0xFFFFF9FB),
+    onSurface = Color(0xFF2E1F25),
+    surfaceVariant = Color(0xFFF7E8ED),
+    onSurfaceVariant = Color(0xFF7A5D68),
     surfaceContainerLowest = Color(0xFFFFFFFF),
-    surfaceContainerLow = Color(0xFFFFF1F5),
-    surfaceContainer = Color(0xFFFDE9F0),
-    surfaceContainerHigh = Color(0xFFF9E2EA),
-    surfaceContainerHighest = Color(0xFFF4DBE4),
-    outline = Color(0xFF9C8A90),
-    outlineVariant = Color(0xFFF2D7E1),
+    surfaceContainerLow = Color(0xFFFFF2F6),
+    surfaceContainer = Color(0xFFFFEAF1),
+    surfaceContainerHigh = Color(0xFFFFE2EC),
+    surfaceContainerHighest = Color(0xFFFBD9E5),
+    outline = Color(0xFFA08891),
+    outlineVariant = Color(0xFFF6D9E3),
     error = Color(0xFFB3261E),
     onError = Color(0xFFFFFFFF),
     errorContainer = Color(0xFFFFE1DE),
@@ -88,29 +89,33 @@ private val DarkColors = darkColorScheme(
     onErrorContainer = Color(0xFFFFDAD6),
 )
 
-// Rounder than stock M3: soft, "airy" cards and pill-shaped chips.
+// Rounder than stock M3: soft, "airy" cards and pill-shaped chips and buttons.
 private val AppShapes = Shapes(
-    extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(16.dp),
+    extraSmall = RoundedCornerShape(10.dp),
+    small = RoundedCornerShape(14.dp),
+    medium = RoundedCornerShape(18.dp),
     large = RoundedCornerShape(24.dp),
     extraLarge = RoundedCornerShape(32.dp),
 )
 
 private val AppTypography = Typography().let { base ->
     base.copy(
-        // Tab titles: lighter and a bit tighter than stock, so headers feel calm.
-        headlineMedium = base.headlineMedium.copy(fontWeight = FontWeight.Normal, letterSpacing = (-0.25).sp),
-        titleLarge = base.titleLarge.copy(fontWeight = FontWeight.Normal),
-        // Brand line on cards: caps, letter-spaced.
-        labelMedium = base.labelMedium.copy(fontWeight = FontWeight.Medium, letterSpacing = 0.8.sp),
+        // Shop-like hierarchy: bold, tight headings; titles semi-bold; brand line in letter-spaced caps.
+        headlineLarge = base.headlineLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp),
+        headlineMedium = base.headlineMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp),
+        headlineSmall = base.headlineSmall.copy(fontWeight = FontWeight.SemiBold, letterSpacing = (-0.25).sp),
+        titleLarge = base.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+        titleMedium = base.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+        titleSmall = base.titleSmall.copy(fontWeight = FontWeight.Medium),
+        labelLarge = base.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+        labelMedium = base.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp),
     )
 }
 
-/** Screen side padding and the gap between cards (design spec v2: 20/16, up from 16/12). */
+/** Screen side padding and the gap between cards (design spec v3: 16/12, shop-grid density). */
 object Spacing {
-    val screen = 20.dp
-    val gap = 16.dp
+    val screen = 16.dp
+    val gap = 12.dp
 }
 
 /**
@@ -182,6 +187,7 @@ object Candy {
     val lilac = Color(0xFFE9DEFA)
     val mint = Color(0xFFD7F2E5)
     val butter = Color(0xFFFFF1C9)
+    val sky = Color(0xFFDDEEFB)
     val ink = Color(0xFF3E1424)
 
     /** Usage heat for calendar days: 1, 2, 3+ items. */
@@ -191,4 +197,24 @@ object Candy {
     val streak: Brush = Brush.linearGradient(listOf(blush, Color(0xFFFFC9DC)))
     val days: Brush = Brush.linearGradient(listOf(lilac, Color(0xFFDCD0F5)))
     val empties: Brush = Brush.linearGradient(listOf(mint, Color(0xFFC6EBDA)))
+}
+
+/**
+ * The "cloud sky" behind screen headers (design spec v3): warm pink at the top fading into peach,
+ * with white cloud puffs and a scalloped cloud edge that melts into the page.
+ */
+object Sky {
+    val top = Color(0xFFFFD3E2)
+    val middle = Color(0xFFFFE3E6)
+    val bottom = Color(0xFFFFEEE8)
+    val brush: Brush = Brush.verticalGradient(listOf(top, middle, bottom))
+
+    /** Pink → raspberry for story rings and the primary call to action accents. */
+    val ring: Brush = Brush.sweepGradient(listOf(Color(0xFFFF9EC0), Color(0xFFCC3D72), Color(0xFFFFB38A), Color(0xFFFF9EC0)))
+    val ringMuted = Color(0xFFF2D7E1)
+
+    /** Banner gradients: blush, peach-butter, lilac-sky. */
+    val bannerPink: Brush = Brush.linearGradient(listOf(Color(0xFFFFC7DA), Color(0xFFFFE1D2)))
+    val bannerPeach: Brush = Brush.linearGradient(listOf(Color(0xFFFFE0CC), Color(0xFFFFF1C9)))
+    val bannerLilac: Brush = Brush.linearGradient(listOf(Color(0xFFE9DEFA), Color(0xFFDDEEFB)))
 }

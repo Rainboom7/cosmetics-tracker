@@ -1,8 +1,6 @@
 package io.github.rainboom7.cosmetics.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,16 +32,13 @@ fun EmptyState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Box(
-            Modifier.size(104.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(Icons.Outlined.Spa, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(48.dp))
+        CloudBadge {
+            Icon(Icons.Outlined.Spa, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 14.dp).size(44.dp))
         }
         Text(title, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
         Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
         if (actionLabel != null) {
-            Button(onClick = onAction, contentPadding = PaddingValues(horizontal = 28.dp, vertical = 12.dp)) { Text(actionLabel) }
+            Button(onClick = onAction, shape = CircleShape, contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp)) { Text(actionLabel) }
         }
     }
 }

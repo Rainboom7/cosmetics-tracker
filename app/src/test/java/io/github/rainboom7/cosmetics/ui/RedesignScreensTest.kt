@@ -2,6 +2,9 @@ package io.github.rainboom7.cosmetics.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -46,6 +49,8 @@ class RedesignScreensTest {
         var shelf: ShelfStatus? = null
         var favorites = false
         var category: Category? = null
+        var heart: Long? = null
+        var usedToday: Long? = null
         compose.setContent {
             CosmeticsTheme {
                 CollectionScreen(
@@ -55,17 +60,24 @@ class RedesignScreensTest {
                     ),
                     onTextChange = {}, onCategory = { category = it }, onOpenItem = {}, onAdd = {}, onPhotoSearch = {}, onAbout = {},
                     onShelf = { shelf = it }, onFavoritesOnly = { favorites = true },
+                    onToggleFavorite = { heart = it }, onToggleUsedToday = { usedToday = it },
                 )
             }
         }
         compose.onNodeWithTag("status_chips").assertIsDisplayed()
-        compose.onNodeWithText("Пробую").assertIsDisplayed() // pill on the card
-        compose.onNodeWithText("Пробую · 1").performClick()
+        compose.onNodeWithContentDescription("Пробую, 1").assertIsDisplayed() // the story circle
+        compose.onNodeWithTag("story_TRYING").performClick()
         assertEquals(ShelfStatus.TRYING, shelf)
-        compose.onNodeWithText("Любимое · 1").performClick()
+        compose.onNodeWithTag("story_FAVORITES").performClick()
         assertEquals(true, favorites)
         compose.onNodeWithTag("category_MAKEUP").performClick()
         assertEquals(Category.MAKEUP, category)
+
+        compose.onNode(hasTestTag("item_card") and hasText("Пробую")).performScrollTo().assertIsDisplayed() // pill on the card
+        compose.onAllNodesWithTag("card_today")[0].performScrollTo().performClick()
+        assertEquals(1L, usedToday)
+        compose.onAllNodesWithTag("card_heart")[1].performScrollTo().performClick()
+        assertEquals(2L, heart)
     }
 
     @Test

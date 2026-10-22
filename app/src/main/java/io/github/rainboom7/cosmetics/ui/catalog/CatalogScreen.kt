@@ -54,6 +54,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.rainboom7.cosmetics.ui.components.bleed
+import io.github.rainboom7.cosmetics.ui.components.cloudSky
+import io.github.rainboom7.cosmetics.ui.theme.Candy
 import io.github.rainboom7.cosmetics.R
 import io.github.rainboom7.cosmetics.core.collection.KnownBarcodes
 import io.github.rainboom7.cosmetics.core.model.CatalogProduct
@@ -139,26 +142,36 @@ fun CatalogScreen(
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }, contentWindowInsets = WindowInsets(0)) { padding ->
         LazyColumn(
             state = listState,
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxSize().padding(padding),
         ) {
             item {
-                SearchField(
-                    value = state.query,
-                    onValueChange = onQueryChange,
-                    placeholder = stringResource(R.string.catalog_search_hint),
-                    trailing = {
-                        Row {
-                            IconButton(onClick = onScanBarcode) {
-                                Icon(Icons.Outlined.QrCodeScanner, contentDescription = stringResource(R.string.mode_barcode))
+                // Same cloud-sky header as the other tabs (design spec v3).
+                Column(
+                    Modifier
+                        .bleed(16.dp)
+                        .cloudSky(MaterialTheme.colorScheme.background)
+                        .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 30.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    Text(stringResource(R.string.tab_catalog), style = MaterialTheme.typography.headlineMedium, color = Candy.ink)
+                    SearchField(
+                        value = state.query,
+                        onValueChange = onQueryChange,
+                        placeholder = stringResource(R.string.catalog_search_hint),
+                        trailing = {
+                            Row {
+                                IconButton(onClick = onScanBarcode) {
+                                    Icon(Icons.Outlined.QrCodeScanner, contentDescription = stringResource(R.string.mode_barcode))
+                                }
+                                IconButton(onClick = onPhotoSearch) {
+                                    Icon(Icons.Outlined.PhotoCamera, contentDescription = stringResource(R.string.action_photo_search))
+                                }
                             }
-                            IconButton(onClick = onPhotoSearch) {
-                                Icon(Icons.Outlined.PhotoCamera, contentDescription = stringResource(R.string.action_photo_search))
-                            }
-                        }
-                    },
-                )
+                        },
+                    )
+                }
             }
             if (state.results.isNotEmpty()) {
                 item { Filters(state, onCategory, onBrand, onToggleWithPhoto) }

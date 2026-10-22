@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -69,6 +72,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
 import android.widget.Toast
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.rainboom7.cosmetics.R
@@ -79,12 +84,16 @@ import io.github.rainboom7.cosmetics.core.model.ItemStatus
 import io.github.rainboom7.cosmetics.core.model.UsageState
 import io.github.rainboom7.cosmetics.core.usage.ItemUsage
 import io.github.rainboom7.cosmetics.ui.components.DayMonthWords
+import io.github.rainboom7.cosmetics.ui.components.CloudCard
 import io.github.rainboom7.cosmetics.ui.components.EmptyState
+import io.github.rainboom7.cosmetics.ui.components.cloudShadow
+import io.github.rainboom7.cosmetics.ui.components.cloudSky
 import io.github.rainboom7.cosmetics.ui.components.FullDate
 import io.github.rainboom7.cosmetics.ui.components.ItemImage
 import io.github.rainboom7.cosmetics.ui.components.appViewModel
 import io.github.rainboom7.cosmetics.ui.components.categoryLabel
 import io.github.rainboom7.cosmetics.ui.components.conditionLabel
+import io.github.rainboom7.cosmetics.ui.theme.Candy
 import io.github.rainboom7.cosmetics.ui.theme.Spacing
 import io.github.rainboom7.cosmetics.ui.theme.tone
 import java.time.Instant
@@ -159,8 +168,18 @@ fun DetailScreen(
             }
             Column(Modifier.padding(horizontal = Spacing.screen, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(Spacing.gap)) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    item.brand?.let { Text(it.uppercase(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    item.brand?.let { Text(it.uppercase(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
                     Text(item.name, style = MaterialTheme.typography.headlineSmall)
+                    if (item.status == ItemStatus.OWNED && item.usage == UsageState.OPENED) {
+                        Text(
+                            stringResource(R.string.remaining_short, item.remainingPercent),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    } else if (item.status == ItemStatus.WISHLIST) {
+                        item.price?.let { Text(it, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) }
+                    }
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     SoftTag(categoryLabel(item.category))
@@ -180,18 +199,30 @@ fun DetailScreen(
                 item.ingredients?.let { Ingredients(it) }
             }
         }
-        Row(
-            Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = Spacing.screen, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            OutlinedButton(onClick = onAddPhoto, modifier = Modifier.weight(1f)) {
-                Icon(Icons.Outlined.AddAPhoto, contentDescription = null, modifier = Modifier.size(18.dp))
-                Text(stringResource(R.string.action_add_photo), modifier = Modifier.padding(start = 8.dp))
-            }
-            if (item.status == ItemStatus.OWNED) {
-                Button(onClick = onBuyAgain, modifier = Modifier.weight(1f).testTag("buy_again")) { Text(stringResource(R.string.action_buy_again)) }
-            } else {
-                Button(onClick = onBought, modifier = Modifier.weight(1f).testTag("bought")) { Text(stringResource(R.string.action_bought)) }
+        // Sticky shop-style action bar: white, lifted by a pink shadow, with one solid pink pill.
+        Surface(color = MaterialTheme.colorScheme.surfaceContainerLowest, shadowElevation = 12.dp, shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)) {
+            Row(
+                Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = Spacing.screen, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                OutlinedButton(
+                    onClick = onAddPhoto,
+                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primaryContainer),
+                    contentPadding = PaddingValues(vertical = 14.dp),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(Icons.Outlined.AddAPhoto, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(stringResource(R.string.action_add_photo), maxLines = 1, modifier = Modifier.padding(start = 8.dp))
+                }
+                if (item.status == ItemStatus.OWNED) {
+                    Button(onClick = onBuyAgain, contentPadding = PaddingValues(vertical = 14.dp), modifier = Modifier.weight(1f).testTag("buy_again")) {
+                        Text(stringResource(R.string.action_buy_again), maxLines = 1)
+                    }
+                } else {
+                    Button(onClick = onBought, contentPadding = PaddingValues(vertical = 14.dp), modifier = Modifier.weight(1f).testTag("bought")) {
+                        Text(stringResource(R.string.action_bought), maxLines = 1)
+                    }
+                }
             }
         }
     }
@@ -201,23 +232,39 @@ fun DetailScreen(
 private fun PhotoPager(item: CosmeticItem) {
     val images = item.images.ifEmpty { listOf(null) }
     val pager = rememberPagerState { images.size }
-    Box(Modifier.fillMaxWidth().height(320.dp).clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))) {
-        HorizontalPager(pager, modifier = Modifier.fillMaxSize()) { page ->
-            val model = images[page]
-            ItemImage(
-                model = model,
-                category = item.category,
-                contentDescription = item.name,
-                modifier = Modifier.fillMaxSize(),
-                iconSize = 72.dp,
-                attribution = model != null && model == item.catalogImageUrl,
-            )
-        }
-        if (images.size > 1) {
-            Row(Modifier.align(Alignment.BottomCenter).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                repeat(images.size) { index ->
-                    val color = if (index == pager.currentPage) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
-                    Box(Modifier.size(8.dp).background(color, CircleShape))
+    // The photo floats on a white tile in the cloud sky, like a product shot in a shop.
+    Box(
+        Modifier.fillMaxWidth().cloudSky(MaterialTheme.colorScheme.background).statusBarsPadding().padding(top = 56.dp, bottom = 34.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        val tile = MaterialTheme.shapes.extraLarge
+        Box(
+            Modifier
+                .fillMaxWidth(0.72f)
+                .aspectRatio(1f)
+                .cloudShadow(tile, 10.dp)
+                .clip(tile)
+                .background(Color.White)
+                .padding(10.dp)
+                .clip(MaterialTheme.shapes.large),
+        ) {
+            HorizontalPager(pager, modifier = Modifier.fillMaxSize()) { page ->
+                val model = images[page]
+                ItemImage(
+                    model = model,
+                    category = item.category,
+                    contentDescription = item.name,
+                    modifier = Modifier.fillMaxSize(),
+                    iconSize = 72.dp,
+                    attribution = model != null && model == item.catalogImageUrl,
+                )
+            }
+            if (images.size > 1) {
+                Row(Modifier.align(Alignment.BottomCenter).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    repeat(images.size) { index ->
+                        val color = if (index == pager.currentPage) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+                        Box(Modifier.size(8.dp).background(color, CircleShape))
+                    }
                 }
             }
         }
@@ -277,7 +324,7 @@ private fun TopButtons(
 
 @Composable
 private fun RoundButton(onClick: () -> Unit, content: @Composable () -> Unit) {
-    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f), modifier = Modifier.padding(4.dp)) {
+    Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.85f), contentColor = Candy.ink, modifier = Modifier.padding(4.dp)) {
         IconButton(onClick = onClick) { content() }
     }
 }
@@ -291,7 +338,7 @@ private fun MyCopy(
     onOpenedOn: (LocalDate) -> Unit,
 ) {
     var pickDate by remember { mutableStateOf(false) }
-    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = MaterialTheme.shapes.large) {
+    CloudCard {
         Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text(stringResource(R.string.my_copy), style = MaterialTheme.typography.titleMedium)
             ConditionChips(item.condition(), onCondition)
@@ -344,7 +391,7 @@ private fun MyCopy(
 @Composable
 private fun WishInfo(item: CosmeticItem) {
     val uriHandler = LocalUriHandler.current
-    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = MaterialTheme.shapes.large) {
+    CloudCard {
         Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (item.wantBadly) Text(stringResource(R.string.want_badly), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleMedium)
             item.price?.let { Text(stringResource(R.string.price_value, it)) }
@@ -377,7 +424,7 @@ private fun Ingredients(text: String) {
 
 @Composable
 private fun SoftTag(text: String) {
-    Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = CircleShape) {
+    Surface(color = MaterialTheme.colorScheme.surfaceContainerLowest, shape = CircleShape, border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
         Text(
             text,
             style = MaterialTheme.typography.labelLarge,
@@ -433,10 +480,10 @@ private fun UsageSection(
     onMarkUsedOn: (LocalDate) -> Unit,
 ) {
     var pickDay by remember { mutableStateOf(false) }
-    Surface(color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f), shape = MaterialTheme.shapes.large) {
+    Surface(color = Candy.blush.copy(alpha = 0.6f), shape = MaterialTheme.shapes.large) {
         Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
+                Icon(Icons.Outlined.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                 Text(stringResource(R.string.usage_section), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 8.dp))
             }
             Text(
@@ -455,18 +502,26 @@ private fun UsageSection(
                     if (usage.usedToday) {
                         Button(
                             onClick = onToggleUsedToday,
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            ),
                             modifier = Modifier.weight(1f).testTag("used_today"),
                         ) {
                             Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                             Text(stringResource(R.string.usage_marked_today), maxLines = 1, modifier = Modifier.padding(start = 6.dp))
                         }
                     } else {
-                        OutlinedButton(onClick = onToggleUsedToday, modifier = Modifier.weight(1f).testTag("used_today")) {
+                        Button(onClick = onToggleUsedToday, modifier = Modifier.weight(1f).testTag("used_today")) {
                             Text(stringResource(R.string.usage_mark_today), maxLines = 1)
                         }
                     }
-                    OutlinedButton(onClick = { pickDay = true }, modifier = Modifier.weight(1f).testTag("used_other_day")) {
+                    OutlinedButton(
+                        onClick = { pickDay = true },
+                        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White.copy(alpha = 0.7f)),
+                        modifier = Modifier.weight(1f).testTag("used_other_day"),
+                    ) {
                         Text(stringResource(R.string.usage_other_day), maxLines = 1)
                     }
                 }

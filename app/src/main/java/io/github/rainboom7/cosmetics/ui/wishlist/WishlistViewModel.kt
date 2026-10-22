@@ -59,6 +59,11 @@ class WishlistViewModel(private val service: CollectionService) : ViewModel() {
         }
     }
 
+    /** Heart on a wish card: "Хочу сильно". */
+    fun toggleWantBadly(id: Long) {
+        viewModelScope.launch { service.get(id)?.let { service.setWantBadly(id, !it.wantBadly) } }
+    }
+
     fun undo(before: CosmeticItem) {
         viewModelScope.launch { service.restore(before) }
     }

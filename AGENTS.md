@@ -59,8 +59,8 @@ app/                  Android app, depends on core via includeBuild("core")
   ui/<screen>/        One package per screen: <Screen>ViewModel + <Screen>Screen.kt
   ui/navigation/      CosmeticsNavHost + Routes (string routes from the design spec)
   ui/components/      Shared composables (ItemImage with placeholder + attribution, labels)
-  ui/theme/           Material 3 theme: pastel palette "Пудра" (dynamic color off by default),
-                      shapes, Spacing, category and status tones
+  ui/theme/           Material 3 theme: palette v3 "Облако" (dynamic color off by default),
+                      shapes, Spacing, category and status tones, Candy and Sky accents
   AppContainer.kt     Manual DI: one instance per app; ViewModels get deps from it
 ```
 
@@ -79,9 +79,11 @@ app/                  Android app, depends on core via includeBuild("core")
   copied into `filesDir/photos` (`PhotoStorage`) and stored as `file://` URIs. Catalog photos
   shown with `attribution = true`.
 - **Scanner → form hand-off** goes through `AddFlowStore` (in-memory), not navigation args.
-- **Look**: pastel and airy (design spec v2). Use theme roles and `Spacing`, pill shapes for chips and
-  badges, tonal surfaces instead of shadows; status colors come from `ShelfStatus.tone()`. No hard-coded
-  colors in screens.
+- **Look**: shop-like, warm pink and cloudy (design spec v3 «Облако»). Tab headers use
+  `Modifier.cloudSky()` (with `bleed()` inside padded lists); white cards float on `cloudShadow()`
+  (`CloudCard`); pill shapes for chips and buttons; one solid `primary` call to action per card or
+  screen. Use theme roles, `Spacing`, `Candy`/`Sky` tokens and `ShelfStatus.tone()`; no other
+  hard-coded colors in screens.
 - **No API keys, no backend.** ML Kit runs on device with bundled models. Text recognition is
   Latin-only (ML Kit has no Cyrillic model).
 - OBF requires a descriptive `User-Agent` (set in `AppContainer`). Keep it.
