@@ -7,9 +7,12 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.rainboom7.cosmetics.core.model.Category
 import io.github.rainboom7.cosmetics.core.model.CosmeticItem
 import io.github.rainboom7.cosmetics.core.model.ItemStatus
+import io.github.rainboom7.cosmetics.core.model.ShelfStatus
 import io.github.rainboom7.cosmetics.core.model.UsageState
 import io.github.rainboom7.cosmetics.data.db.AppDatabase
 import io.github.rainboom7.cosmetics.data.db.RoomCollectionRepository
+import io.github.rainboom7.cosmetics.data.db.RoomUsageLogRepository
+import io.github.rainboom7.cosmetics.core.usage.UsageMark
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -45,6 +48,9 @@ class RoomCollectionRepositoryTest {
         price = "1 200 ₽",
         link = "https://shop.example/aloe",
         addedAtMillis = 123,
+        shelfStatus = ShelfStatus.STOCKED,
+        favorite = true,
+        finishedOn = LocalDate.of(2026, 9, 30),
     )
 
     @Before
@@ -96,5 +102,38 @@ class RoomCollectionRepositoryTest {
         repo.upsert(full)
         repo.replaceAll(listOf(full.copy(id = 99, name = "A"), full.copy(id = 99, name = "B")))
         assertEquals(setOf("A", "B"), repo.observeAll().first().map { it.name }.toSet())
+    }
+
+    @Test
+    fun `usage marks are unique per day and go away with their item`() = runTest {
+        val log = RoomUsageLogRepository(db.usage())
+        val id = repo.upsert(full)
+        val other = repo.upsert(full.copy(name = "Other"))
+        val day = LocalDate.of(2026, 10, 20)
+
+        log.add(UsageMark(id, day))
+        log.add(UsageMark(id, day))
+        log.addAll(listOf(UsageMark(id, day.plusDays(1)), UsageMark(other, day)))
+
+        assertEquals(listOf(day.plusDays(1), day), log.observeForItem(id).first())
+        assertEquals(3, log.observeAll().first().size)
+
+        log.remove(UsageMark(id, day.plusDays(1)))
+        assertEquals(listOf(day), log.observeForItem(id).first())
+
+        repo.delete(id)
+        assertEquals(listOf(UsageMark(other, day)), log.observeAll().first())
+    }
+
+    @Test
+    fun `replaceAll returns the new ids in order and clears old marks`() = runTest {
+        val log = RoomUsageLogRepository(db.usage())
+        val old = repo.upsert(full)
+        log.add(UsageMark(old, LocalDate.of(2026, 10, 1)))
+
+        val ids = repo.replaceAll(listOf(full.copy(name = "A"), full.copy(name = "B")))
+
+        assertEquals(listOf("A", "B"), ids.map { repo.get(it)!!.name })
+        assertEquals(emptyList<UsageMark>(), log.observeAll().first())
     }
 }

@@ -6,15 +6,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Spa
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Spa
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -34,6 +39,7 @@ import androidx.navigation.navArgument
 import io.github.rainboom7.cosmetics.R
 import io.github.rainboom7.cosmetics.core.model.ItemStatus
 import io.github.rainboom7.cosmetics.ui.about.AboutRoute
+import io.github.rainboom7.cosmetics.ui.calendar.CalendarRoute
 import io.github.rainboom7.cosmetics.ui.catalog.CatalogRoute
 import io.github.rainboom7.cosmetics.ui.collection.CollectionRoute
 import io.github.rainboom7.cosmetics.ui.detail.DetailRoute
@@ -46,6 +52,7 @@ import io.github.rainboom7.cosmetics.ui.wishlist.WishlistRoute
 object Routes {
     const val COLLECTION = "collection"
     const val WISHLIST = "wishlist"
+    const val CALENDAR = "calendar"
     const val CATALOG = "catalog?query={query}"
     const val PRODUCT = "product/{id}"
     const val ADD_SCAN = "add_scan?target={target}&mode={mode}"
@@ -62,6 +69,7 @@ private data class Tab(val route: String, val label: Int, val icon: ImageVector,
 
 private val Tabs = listOf(
     Tab(Routes.COLLECTION, R.string.tab_collection, Icons.Outlined.Spa, Icons.Filled.Spa, Routes.COLLECTION),
+    Tab(Routes.CALENDAR, R.string.tab_calendar, Icons.Outlined.CalendarMonth, Icons.Filled.CalendarMonth, Routes.CALENDAR),
     Tab(Routes.WISHLIST, R.string.tab_wishlist, Icons.Outlined.FavoriteBorder, Icons.Filled.Favorite, Routes.WISHLIST),
     Tab(Routes.CATALOG, R.string.tab_catalog, Icons.Outlined.Search, Icons.Filled.Search, Routes.catalog()),
 )
@@ -88,7 +96,7 @@ fun CosmeticsNavHost(navController: NavHostController = rememberNavController())
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
             if (showBar) {
-                NavigationBar {
+                NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainerLow, tonalElevation = 0.dp) {
                     Tabs.forEach { tab ->
                         val selected = tab.route == currentRoute
                         NavigationBarItem(
@@ -97,6 +105,13 @@ fun CosmeticsNavHost(navController: NavHostController = rememberNavController())
                             icon = { Icon(if (selected) tab.selectedIcon else tab.icon, contentDescription = null) },
                             label = { Text(stringResource(tab.label)) },
                             modifier = Modifier.testTag("tab_" + tab.route.substringBefore('?')),
+                            colors = NavigationBarItemDefaults.colors(
+                                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
                         )
                     }
                 }
@@ -113,6 +128,11 @@ fun CosmeticsNavHost(navController: NavHostController = rememberNavController())
                         onPhotoSearch = { navController.navigate(Routes.addScan(mode = ScanMode.PHOTO)) },
                         onAbout = { navController.navigate(Routes.ABOUT) },
                     )
+                }
+            }
+            composable(Routes.CALENDAR) {
+                Box(tabModifier) {
+                    CalendarRoute(onOpenItem = { navController.navigate(Routes.product(it)) })
                 }
             }
             composable(Routes.WISHLIST) {

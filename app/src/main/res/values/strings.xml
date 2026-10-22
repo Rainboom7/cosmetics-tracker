@@ -164,4 +164,62 @@
     </plurals>
     <!-- Fixes after first try -->
     <string name="search_by_name">Поиск по названию</string>
+    <!-- Redesign v2: statuses, favorites, usage calendar -->
+    <string name="tab_calendar">Календарь</string>
+    <string name="shelf_title">Статус</string>
+    <string name="shelf_hint">Нажмите ещё раз, чтобы снять статус</string>
+    <string name="shelf_stocked">Есть запас</string>
+    <string name="shelf_running_low">Заканчивается</string>
+    <string name="shelf_trying">Пробую</string>
+    <string name="shelf_not_using">Не использую</string>
+    <string name="shelf_give_away">Отдам</string>
+    <string name="shelf_count">%1$s · %2$d</string>
+    <string name="filter_favorites">Любимое</string>
+    <string name="action_favorite">В любимое</string>
+    <string name="action_unfavorite">Убрать из любимого</string>
+    <string name="usage_section">Использование</string>
+    <string name="usage_mark_today">Отметить сегодня</string>
+    <string name="usage_marked_today">Сегодня отмечено</string>
+    <string name="usage_last">Последний раз: %1$s</string>
+    <string name="usage_never">Ещё не отмечали</string>
+    <plurals name="usage_last30">
+        <item quantity="one">%1$d день из последних 30</item>
+        <item quantity="few">%1$d дня из последних 30</item>
+        <item quantity="many">%1$d дней из последних 30</item>
+        <item quantity="other">%1$d дня из последних 30</item>
+    </plurals>
+    <string name="calendar_prev">Предыдущий месяц</string>
+    <string name="calendar_next">Следующий месяц</string>
+    <string name="calendar_mark">Отметить использование</string>
+    <string name="calendar_day_empty">В этот день ничего не отмечено</string>
+    <string name="calendar_pick_title">Что использовали %1$s?</string>
+    <string name="calendar_nothing_owned">Сначала добавьте средства в коллекцию, и их можно будет отмечать здесь.</string>
+    <string name="calendar_intro">Отмечайте, чем пользуетесь: так видно любимчиков и то, что пылится на полке.</string>
+    <string name="calendar_most_used">Чаще всего в этом месяце</string>
+    <string name="calendar_forgotten_title">Давно не пользовались</string>
+    <string name="calendar_forgotten_body">Больше месяца без отметок. Может, пометить «Не использую» или отдать?</string>
+    <plurals name="calendar_streak">
+        <item quantity="one">%1$d день подряд</item>
+        <item quantity="few">%1$d дня подряд</item>
+        <item quantity="many">%1$d дней подряд</item>
+        <item quantity="other">%1$d дня подряд</item>
+    </plurals>
+    <plurals name="calendar_active_days">
+        <item quantity="one">%1$d день с отметками</item>
+        <item quantity="few">%1$d дня с отметками</item>
+        <item quantity="many">%1$d дней с отметками</item>
+        <item quantity="other">%1$d дня с отметками</item>
+    </plurals>
+    <plurals name="calendar_empties">
+        <item quantity="one">%1$d пустая баночка в этом году</item>
+        <item quantity="few">%1$d пустые баночки в этом году</item>
+        <item quantity="many">%1$d пустых баночек в этом году</item>
+        <item quantity="other">%1$d пустой баночки в этом году</item>
+    </plurals>
+    <plurals name="calendar_times">
+        <item quantity="one">%1$d раз</item>
+        <item quantity="few">%1$d раза</item>
+        <item quantity="many">%1$d раз</item>
+        <item quantity="other">%1$d раза</item>
+    </plurals>
 </resources>
