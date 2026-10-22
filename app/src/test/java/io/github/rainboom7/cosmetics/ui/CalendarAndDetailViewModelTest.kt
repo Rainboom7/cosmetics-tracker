@@ -125,6 +125,24 @@ class CalendarAndDetailViewModelTest {
     }
 
     @Test
+    fun `collection cards mark today and toggle the heart`() = runTest(main.dispatcher) {
+        val vm = CollectionViewModel(service, calendar)
+        backgroundScope.launch { vm.state.collect {} }
+        assertEquals(emptySet<Long>(), vm.state.value.usedToday)
+
+        vm.toggleUsedToday(2)
+        assertEquals(setOf(2L), vm.state.value.usedToday)
+        assertEquals(UsageState.OPENED, repo.get(2)!!.usage) // the first use opens the jar
+        vm.toggleUsedToday(2)
+        assertEquals(emptySet<Long>(), vm.state.value.usedToday)
+
+        vm.toggleFavorite(1)
+        assertTrue(repo.get(1)!!.favorite)
+        vm.toggleFavorite(1)
+        assertFalse(repo.get(1)!!.favorite)
+    }
+
+    @Test
     fun `month grid starts on Monday and pads to full weeks`() {
         val weeks = monthWeeks(YearMonth.of(2026, 10)) // 1 October 2026 is a Thursday
         assertEquals(5, weeks.size)

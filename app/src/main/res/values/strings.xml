@@ -269,4 +269,31 @@
     <string name="spec_barcode">Штрихкод</string>
     <string name="action_show_all">Показать полностью</string>
     <string name="action_collapse">Свернуть</string>
+
+    <!-- Redesign v3 «Облако» -->
+    <string name="home_title">Моя полочка</string>
+    <string name="home_greeting">Привет! Чем побалуем кожу сегодня?</string>
+    <string name="section_categories">Категории</string>
+    <string name="section_my_items">Мои средства</string>
+    <string name="card_today">Сегодня</string>
+    <string name="card_mark_today">Отметить использование сегодня</string>
+    <string name="card_unmark_today">Снять отметку за сегодня</string>
+    <string name="remaining_short">осталось %1$d%%</string>
+    <string name="story_count">%1$s, %2$d</string>
+    <plurals name="home_count">
+        <item quantity="one">%1$d средство на полочке</item>
+        <item quantity="few">%1$d средства на полочке</item>
+        <item quantity="many">%1$d средств на полочке</item>
+        <item quantity="other">%1$d средства на полочке</item>
+    </plurals>
+    <plurals name="banner_running_low">
+        <item quantity="one">%1$d средство заканчивается: самое время в желаемое</item>
+        <item quantity="few">%1$d средства заканчиваются: самое время в желаемое</item>
+        <item quantity="many">%1$d средств заканчиваются: самое время в желаемое</item>
+        <item quantity="other">%1$d средства заканчиваются: самое время в желаемое</item>
+    </plurals>
+    <string name="banner_favorites">Любимчики собраны в кружочке «Любимое» наверху</string>
+    <string name="wishlist_subtitle">Всё, что хочется попробовать</string>
+    <string name="wishlist_bought_short">Купила</string>
+    <string name="calendar_subtitle">Ваш дневник ухода</string>
 </resources>

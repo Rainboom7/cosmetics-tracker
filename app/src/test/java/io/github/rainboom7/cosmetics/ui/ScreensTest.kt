@@ -8,6 +8,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -66,7 +68,7 @@ class ScreensTest {
         compose.onNodeWithText("Aloe Water").assertIsDisplayed()
         compose.onNodeWithText("L'ORÉAL").assertIsDisplayed()
         compose.onNodeWithText("Истекает").assertIsDisplayed()
-        compose.onNodeWithText("Заканчивается").assertIsDisplayed()
+        compose.onNode(hasTestTag("item_card") and hasText("Заканчивается")).assertIsDisplayed() // the badge, not the story
         compose.onNodeWithText("Открыт 01.05 · до 11.2026").assertIsDisplayed()
         compose.onNodeWithTag("expiring_banner").assertIsDisplayed()
         compose.onNodeWithText("Все").assertIsDisplayed()

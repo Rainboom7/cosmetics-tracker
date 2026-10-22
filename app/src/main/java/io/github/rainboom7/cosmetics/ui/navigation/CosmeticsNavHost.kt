@@ -4,7 +4,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.platform.LocalDensity
+import io.github.rainboom7.cosmetics.ui.theme.Sky
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Favorite
@@ -20,6 +24,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import io.github.rainboom7.cosmetics.ui.components.cloudShadow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -98,29 +107,42 @@ fun CosmeticsNavHost(navController: NavHostController = rememberNavController())
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
             if (showBar) {
-                NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainerLow, tonalElevation = 0.dp) {
-                    Tabs.forEach { tab ->
-                        val selected = tab.route == currentRoute
-                        NavigationBarItem(
-                            selected = selected,
-                            onClick = { navController.openTab(tab.navigateTo) },
-                            icon = { Icon(if (selected) tab.selectedIcon else tab.icon, contentDescription = null) },
-                            label = { Text(stringResource(tab.label)) },
-                            modifier = Modifier.testTag("tab_" + tab.route.substringBefore('?')),
-                            colors = NavigationBarItemDefaults.colors(
-                                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                                selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                selectedTextColor = MaterialTheme.colorScheme.onSurface,
-                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            ),
-                        )
+                // White bar on a soft pink shadow with rounded top corners; the active tab is raspberry pink.
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceContainerLowest,
+                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                    modifier = Modifier.cloudShadow(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp), 14.dp),
+                ) {
+                    NavigationBar(containerColor = Color.Transparent, tonalElevation = 0.dp) {
+                        Tabs.forEach { tab ->
+                            val selected = tab.route == currentRoute
+                            NavigationBarItem(
+                                selected = selected,
+                                onClick = { navController.openTab(tab.navigateTo) },
+                                icon = { Icon(if (selected) tab.selectedIcon else tab.icon, contentDescription = null) },
+                                label = { Text(stringResource(tab.label), fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium) },
+                                modifier = Modifier.testTag("tab_" + tab.route.substringBefore('?')),
+                                colors = NavigationBarItemDefaults.colors(
+                                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                ),
+                            )
+                        }
                     }
                 }
             }
         },
     ) { padding ->
-        val tabModifier = Modifier.fillMaxSize().padding(padding).statusBarsPadding()
+        val statusBarTop = WindowInsets.statusBars.getTop(LocalDensity.current)
+        // The sky color fills the status bar too, so each tab's cloud header starts at the top edge.
+        val tabModifier = Modifier
+            .fillMaxSize()
+            .padding(padding)
+            .drawBehind { drawRect(Sky.top, size = size.copy(height = statusBarTop.toFloat())) }
+            .statusBarsPadding()
         NavHost(navController, startDestination = Routes.COLLECTION) {
             composable(Routes.COLLECTION) {
                 Box(tabModifier) {

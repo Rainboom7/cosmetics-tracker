@@ -1,6 +1,5 @@
 package io.github.rainboom7.cosmetics.ui.calendar
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -69,6 +68,9 @@ import io.github.rainboom7.cosmetics.ui.components.DayMonthWords
 import io.github.rainboom7.cosmetics.ui.components.ItemImage
 import io.github.rainboom7.cosmetics.ui.components.Russian
 import io.github.rainboom7.cosmetics.ui.components.appViewModel
+import io.github.rainboom7.cosmetics.ui.components.bleed
+import io.github.rainboom7.cosmetics.ui.components.cloudShadow
+import io.github.rainboom7.cosmetics.ui.components.cloudSky
 import io.github.rainboom7.cosmetics.ui.components.monthTitle
 import io.github.rainboom7.cosmetics.ui.theme.Candy
 import io.github.rainboom7.cosmetics.ui.theme.Spacing
@@ -103,14 +105,22 @@ fun CalendarScreen(
 ) {
     var picking by remember { mutableStateOf(false) }
     LazyColumn(
-        contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, top = 20.dp, bottom = 32.dp),
+        contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(Spacing.gap),
         modifier = Modifier.fillMaxSize().testTag("calendar"),
     ) {
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(stringResource(R.string.tab_calendar), style = MaterialTheme.typography.headlineMedium)
-                Text(stringResource(R.string.calendar_intro), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            // Cloud-sky header; the month card below floats up into it.
+            Column(
+                Modifier
+                    .bleed(Spacing.screen)
+                    .cloudSky(MaterialTheme.colorScheme.background)
+                    .padding(start = Spacing.screen, end = Spacing.screen, top = 16.dp, bottom = 30.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(stringResource(R.string.tab_calendar), style = MaterialTheme.typography.headlineMedium, color = Candy.ink)
+                Text(stringResource(R.string.calendar_subtitle), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(R.string.calendar_intro), style = MaterialTheme.typography.bodyMedium, color = Candy.ink.copy(alpha = 0.7f))
             }
         }
         item { MonthCard(state, onPreviousMonth, onNextMonth, onSelect) }
@@ -137,14 +147,15 @@ fun CalendarScreen(
     }
 }
 
-/** Month grid on a blush → peach → lilac gradient; days glow pinker the more was used. */
+/** Month grid on a white cloud card; days glow pinker the more was used. */
 @Composable
 private fun MonthCard(state: CalendarUiState, onPreviousMonth: () -> Unit, onNextMonth: () -> Unit, onSelect: (LocalDate) -> Unit) {
     Box(
         Modifier
             .fillMaxWidth()
+            .cloudShadow(MaterialTheme.shapes.extraLarge, 6.dp)
             .clip(MaterialTheme.shapes.extraLarge)
-            .background(Candy.header)
+            .background(Color.White)
             .padding(horizontal = 12.dp, vertical = 16.dp),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -188,7 +199,7 @@ private fun MonthCard(state: CalendarUiState, onPreviousMonth: () -> Unit, onNex
 
 @Composable
 private fun ArrowButton(icon: ImageVector, description: String, enabled: Boolean, onClick: () -> Unit) {
-    Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.7f), contentColor = Candy.ink, modifier = Modifier.size(40.dp).alpha(if (enabled) 1f else 0.4f)) {
+    Surface(shape = CircleShape, color = Candy.blush, contentColor = Candy.ink, modifier = Modifier.size(40.dp).alpha(if (enabled) 1f else 0.4f)) {
         IconButton(onClick = onClick, enabled = enabled) { Icon(icon, contentDescription = description) }
     }
 }
@@ -203,7 +214,7 @@ private fun DayCell(date: LocalDate, state: CalendarUiState, onSelect: (LocalDat
     val background = when {
         selected -> colors.primary
         used > 0 -> Candy.heat[(used - 1).coerceAtMost(Candy.heat.lastIndex)]
-        else -> Color.White.copy(alpha = 0.55f)
+        else -> Candy.blush.copy(alpha = 0.22f)
     }
     Box(
         Modifier
@@ -286,7 +297,7 @@ private fun DayCard(state: CalendarUiState, onAdd: () -> Unit, onRemove: (Long) 
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerLowest,
         shape = MaterialTheme.shapes.extraLarge,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier.cloudShadow(MaterialTheme.shapes.extraLarge, 4.dp),
     ) {
         Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -347,10 +358,11 @@ private fun DayCard(state: CalendarUiState, onAdd: () -> Unit, onRemove: (Long) 
 private fun TopItemCard(item: CosmeticItem, days: Int, onClick: () -> Unit) {
     Column(
         Modifier
+            .padding(vertical = 6.dp)
             .width(128.dp)
+            .cloudShadow(MaterialTheme.shapes.large, 3.dp)
             .clip(MaterialTheme.shapes.large)
             .background(MaterialTheme.colorScheme.surfaceContainerLowest)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.large)
             .clickable(onClick = onClick)
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
