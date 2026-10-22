@@ -2,6 +2,8 @@ package io.github.rainboom7.cosmetics.core.collection
 
 import io.github.rainboom7.cosmetics.core.model.Category
 import io.github.rainboom7.cosmetics.core.model.CosmeticItem
+import io.github.rainboom7.cosmetics.core.model.ShelfStatus
+import io.github.rainboom7.cosmetics.core.model.UsageState
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.LocalDate
@@ -50,5 +52,19 @@ class CollectionQueryTest {
         assertEquals(listOf(2L), ids(wishes.applyWishlistFilter(WishlistFilter.WANT_BADLY)))
         assertEquals(listOf(3L), ids(wishes.applyWishlistFilter(WishlistFilter.REBUY)))
         assertEquals(listOf(1L), ids(wishes.applyWishlistFilter(WishlistFilter.ALL, text = "A")))
+    }
+
+    @Test
+    fun `status filter uses the automatic running-low status too`() {
+        val shelf = listOf(
+            CosmeticItem(id = 1, name = "a", shelfStatus = ShelfStatus.STOCKED),
+            CosmeticItem(id = 2, name = "b", usage = UsageState.OPENED, remainingPercent = 20),
+            CosmeticItem(id = 3, name = "c", shelfStatus = ShelfStatus.RUNNING_LOW, favorite = true),
+            CosmeticItem(id = 4, name = "d", favorite = true),
+        )
+        assertEquals(setOf(2L, 3L), ids(shelf.applyQuery(CollectionQuery(shelf = ShelfStatus.RUNNING_LOW))).toSet())
+        assertEquals(listOf(1L), ids(shelf.applyQuery(CollectionQuery(shelf = ShelfStatus.STOCKED))))
+        assertEquals(setOf(3L, 4L), ids(shelf.applyQuery(CollectionQuery(favoritesOnly = true))).toSet())
+        assertEquals(listOf(3L), ids(shelf.applyQuery(CollectionQuery(favoritesOnly = true, shelf = ShelfStatus.RUNNING_LOW))))
     }
 }

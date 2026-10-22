@@ -5,13 +5,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.rainboom7.cosmetics.core.collection.CollectionService
 import io.github.rainboom7.cosmetics.core.model.CosmeticItem
+import io.github.rainboom7.cosmetics.core.model.ShelfStatus
 import io.github.rainboom7.cosmetics.core.model.UsageState
+import io.github.rainboom7.cosmetics.core.usage.ItemUsage
+import io.github.rainboom7.cosmetics.core.usage.UsageCalendar
 import io.github.rainboom7.cosmetics.data.photo.PhotoStorage
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -20,7 +23,7 @@ import java.time.LocalDate
 sealed interface DetailState {
     data object Loading : DetailState
     data object Missing : DetailState
-    data class Loaded(val item: CosmeticItem, val today: LocalDate) : DetailState
+    data class Loaded(val item: CosmeticItem, val today: LocalDate, val usage: ItemUsage = ItemUsage()) : DetailState
 }
 
 sealed interface DetailEvent {
@@ -33,10 +36,11 @@ class DetailViewModel(
     private val id: Long,
     private val service: CollectionService,
     private val photos: PhotoStorage?,
+    private val calendar: UsageCalendar,
 ) : ViewModel() {
-    val state: StateFlow<DetailState> = service.observeItem(id)
-        .map { item -> if (item == null) DetailState.Missing else DetailState.Loaded(item, service.today()) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DetailState.Loading)
+    val state: StateFlow<DetailState> = combine(service.observeItem(id), calendar.observeItem(id)) { item, usage ->
+        if (item == null) DetailState.Missing else DetailState.Loaded(item, service.today(), usage)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DetailState.Loading)
 
     private val eventChannel = Channel<DetailEvent>(Channel.BUFFERED)
     val events: Flow<DetailEvent> = eventChannel.receiveAsFlow()
@@ -49,6 +53,19 @@ class DetailViewModel(
         val item = (state.value as? DetailState.Loaded)?.item ?: return@launch
         service.save(item.copy(openedOn = date, usage = if (item.usage == UsageState.NEW) UsageState.OPENED else item.usage))
     }
+
+    /** Status chip tap: tapping the selected chip again clears the status. */
+    fun toggleShelf(shelf: ShelfStatus) = launch {
+        val item = (state.value as? DetailState.Loaded)?.item ?: return@launch
+        service.setShelfStatus(id, if (item.shelfStatus == shelf) null else shelf)
+    }
+
+    fun toggleFavorite() = launch {
+        val item = (state.value as? DetailState.Loaded)?.item ?: return@launch
+        service.setFavorite(id, !item.favorite)
+    }
+
+    fun toggleUsedToday() = launch { calendar.toggleToday(id) }
 
     fun toggleWantBadly() = launch {
         val item = (state.value as? DetailState.Loaded)?.item ?: return@launch

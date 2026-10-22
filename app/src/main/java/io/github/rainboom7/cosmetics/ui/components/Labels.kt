@@ -1,19 +1,33 @@
 package io.github.rainboom7.cosmetics.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.HourglassBottom
+import androidx.compose.material.icons.outlined.WaterDrop
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.rainboom7.cosmetics.R
 import io.github.rainboom7.cosmetics.core.model.Category
 import io.github.rainboom7.cosmetics.core.model.ItemBadge
+import io.github.rainboom7.cosmetics.core.model.ShelfStatus
 import io.github.rainboom7.cosmetics.core.model.UsageState
+import io.github.rainboom7.cosmetics.ui.theme.tone
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.util.Locale
 
 @Composable
 fun categoryLabel(category: Category): String = stringResource(
@@ -37,15 +51,57 @@ fun usageLabel(usage: UsageState): String = stringResource(
     },
 )
 
-/** Error-colored badge on collection cards: "Истекает" / "Заканчивается". */
+@Composable
+fun shelfLabel(status: ShelfStatus): String = stringResource(
+    when (status) {
+        ShelfStatus.STOCKED -> R.string.shelf_stocked
+        ShelfStatus.RUNNING_LOW -> R.string.shelf_running_low
+        ShelfStatus.TRYING -> R.string.shelf_trying
+        ShelfStatus.NOT_USING -> R.string.shelf_not_using
+        ShelfStatus.GIVE_AWAY -> R.string.shelf_give_away
+    },
+)
+
+/**
+ * Warning pill on collection cards: "Истекает" in soft red, "Заканчивается" in peach.
+ * Pastel containers instead of solid error red keep the grid calm.
+ */
 @Composable
 fun BadgeLabel(badge: ItemBadge, modifier: Modifier = Modifier) {
-    Surface(color = MaterialTheme.colorScheme.error, shape = MaterialTheme.shapes.small, modifier = modifier) {
+    val expiring = badge == ItemBadge.EXPIRING
+    val (container, ink) = if (expiring) {
+        MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.onErrorContainer
+    } else {
+        ShelfStatus.RUNNING_LOW.tone().let { it.tone to it.ink }
+    }
+    Surface(color = container, contentColor = ink, shape = CircleShape, modifier = modifier) {
+        Row(
+            Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Icon(
+                if (expiring) Icons.Outlined.HourglassBottom else Icons.Outlined.WaterDrop,
+                contentDescription = null,
+                modifier = Modifier.size(12.dp),
+            )
+            Text(
+                stringResource(if (expiring) R.string.badge_expiring else R.string.badge_running_low),
+                style = MaterialTheme.typography.labelSmall,
+            )
+        }
+    }
+}
+
+/** Small pastel pill with the item's status, e.g. on cards and in lists. */
+@Composable
+fun StatusPill(status: ShelfStatus, modifier: Modifier = Modifier) {
+    val tone = status.tone()
+    Surface(color = tone.tone, contentColor = tone.ink, shape = CircleShape, modifier = modifier) {
         Text(
-            stringResource(if (badge == ItemBadge.EXPIRING) R.string.badge_expiring else R.string.badge_running_low),
-            color = MaterialTheme.colorScheme.onError,
+            shelfLabel(status),
             style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
         )
     }
 }
@@ -53,6 +109,15 @@ fun BadgeLabel(badge: ItemBadge, modifier: Modifier = Modifier) {
 val DayMonth: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM")
 val MonthYear: DateTimeFormatter = DateTimeFormatter.ofPattern("MM.yyyy")
 val FullDate: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+
+val Russian: Locale = Locale.forLanguageTag("ru")
+
+/** "22 октября" (genitive month, as in a sentence). */
+val DayMonthWords: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMMM", Russian)
+
+/** "Октябрь 2026" (nominative month, for the calendar header). */
+fun monthTitle(month: YearMonth): String =
+    month.month.getDisplayName(TextStyle.FULL_STANDALONE, Russian).replaceFirstChar { it.titlecase(Russian) } + " " + month.year
 
 /** "Открыт 08.03 · до 03.2027", or null if the item was not opened. */
 @Composable

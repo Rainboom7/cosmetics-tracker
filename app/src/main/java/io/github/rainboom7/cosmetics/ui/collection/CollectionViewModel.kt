@@ -8,6 +8,7 @@ import io.github.rainboom7.cosmetics.core.collection.applyQuery
 import io.github.rainboom7.cosmetics.core.model.Category
 import io.github.rainboom7.cosmetics.core.model.CosmeticItem
 import io.github.rainboom7.cosmetics.core.model.ItemStatus
+import io.github.rainboom7.cosmetics.core.model.ShelfStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +27,9 @@ data class CollectionUiState(
     /** "У N средств срок после вскрытия истекает в этом месяце"; the banner hides at 0. */
     val expiringSoon: Int = 0,
     val today: LocalDate = LocalDate.now(),
+    /** Counts for the status chips; a chip is shown only when its count is above 0 or it is selected. */
+    val shelfCounts: Map<ShelfStatus, Int> = emptyMap(),
+    val favoriteCount: Int = 0,
 )
 
 class CollectionViewModel(private val service: CollectionService) : ViewModel() {
@@ -43,12 +47,19 @@ class CollectionViewModel(private val service: CollectionService) : ViewModel() 
             totalCount = owned.size,
             expiringSoon = summary.expiringSoonCount,
             today = service.today(),
+            shelfCounts = summary.shelfCounts,
+            favoriteCount = summary.favoriteCount,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CollectionUiState())
 
     fun setText(text: String) = query.update { it.copy(text = text) }
 
     fun setCategory(category: Category?) = query.update { it.copy(category = category) }
+
+    /** Status chip tap: selects [shelf], or clears it when it is already selected. */
+    fun toggleShelf(shelf: ShelfStatus) = query.update { it.copy(shelf = if (it.shelf == shelf) null else shelf) }
+
+    fun toggleFavoritesOnly() = query.update { it.copy(favoritesOnly = !it.favoritesOnly) }
 
     companion object {
         /** Filter chips on the collection screen, in order; null is "Все". */

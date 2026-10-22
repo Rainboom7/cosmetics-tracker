@@ -10,6 +10,10 @@ cosmetics a person owns and wants. UI language is Russian.
 
 - **Коллекция**: owned items with photos, usage state (Новое / Открыто / Закончилось), remaining %,
   opened date + PAO (period after opening) → expiry date, badges and expiry notifications.
+  Status marks (`ShelfStatus`: Есть запас / Заканчивается / Пробую / Не использую / Отдам; "Заканчивается"
+  is also derived from remaining ≤ 35%), "Любимое", and `finishedOn` for the "Пустые баночки" counter.
+- **Календарь**: usage calendar, one mark per item per day (`UsageCalendar`): month grid, streak,
+  most used, "Давно не пользовались" (opened, no marks for 30+ days). Marking a new item opens it.
 - **Желаемое**: wishlist with "Хочу сильно", price, link, notes; "Куплено" moves an item to the
   collection; "Купить снова" puts an owned item back on the wishlist.
 - **Каталог**: search in [Open Beauty Facts](https://world.openbeautyfacts.org) (open data,
@@ -31,17 +35,20 @@ core/                 Pure Kotlin/JVM build (no Android SDK). Domain + catalog c
                       CategoryClassifier (OBF tags / names → Category)
   collection/         CollectionRepository interface, InMemoryCollectionRepository (tests/fakes),
                       CollectionService (all business rules), queries/filters, DuplicateFinder,
-                      ExpiryReminders, CollectionBackup (JSON export/import)
+                      ExpiryReminders, CollectionBackup (JSON export/import, format 2 with usage marks)
+  usage/              UsageLogRepository (+ in-memory), UsageCalendar (month view, streak, forgotten)
   photo/              PhotoQueryPlanner + PhotoSearch (recognition → catalog queries), MatchScorer,
                       FormPrefiller (OCR → form fields)
 app/                  Android app, depends on core via includeBuild("core")
-  data/db/            Room: ItemEntity, ItemDao, AppDatabase, RoomCollectionRepository
+  data/db/            Room: ItemEntity, ItemDao, UsageEntity/UsageDao (usage_log, FK cascade to items),
+                      AppDatabase (version 2, MIGRATION_1_2), RoomCollectionRepository, RoomUsageLogRepository
   data/photo/         PhotoStorage (filesDir/photos), MlKitPhotoRecognizer
   work/               ExpiryReminderWorker (WorkManager, daily)
   ui/<screen>/        One package per screen: <Screen>ViewModel + <Screen>Screen.kt
   ui/navigation/      CosmeticsNavHost + Routes (string routes from the design spec)
   ui/components/      Shared composables (ItemImage with placeholder + attribution, labels)
-  ui/theme/           Material 3 theme, fallback palette (seed #8C4A60), category tones
+  ui/theme/           Material 3 theme: pastel palette "Пудра" (dynamic color off by default),
+                      shapes, Spacing, category and status tones
   AppContainer.kt     Manual DI: one instance per app; ViewModels get deps from it
 ```
 
@@ -60,6 +67,9 @@ app/                  Android app, depends on core via includeBuild("core")
   copied into `filesDir/photos` (`PhotoStorage`) and stored as `file://` URIs. Catalog photos
   shown with `attribution = true`.
 - **Scanner → form hand-off** goes through `AddFlowStore` (in-memory), not navigation args.
+- **Look**: pastel and airy (design spec v2). Use theme roles and `Spacing`, pill shapes for chips and
+  badges, tonal surfaces instead of shadows; status colors come from `ShelfStatus.tone()`. No hard-coded
+  colors in screens.
 - **No API keys, no backend.** ML Kit runs on device with bundled models. Text recognition is
   Latin-only (ML Kit has no Cyrillic model).
 - OBF requires a descriptive `User-Agent` (set in `AppContainer`). Keep it.
@@ -104,7 +114,7 @@ Never skip or `@Ignore` a failing test to get green.
 ## Common tasks
 
 - **New field on an item**: add to `CosmeticItem` → `ItemEntity` (+ bump `AppDatabase.version`
-  and add a `Migration`; schemas are exported to `app/schemas/`) → `CollectionBackup.BackupItem`
+  and add a `Migration`, covered in `MigrationTest`; schemas are exported to `app/schemas/`) → `CollectionBackup.BackupItem`
   (with a default, so old backups import) → form `FormFields`/`toItem` → tests in
   `CollectionBackupTest` and `RoomCollectionRepositoryTest`.
 - **New catalog source**: implement `ProductCatalog` in `core/catalog`, test it with

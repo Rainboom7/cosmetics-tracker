@@ -35,10 +35,11 @@ class InMemoryCollectionRepository(initial: List<CosmeticItem> = emptyList()) : 
         items.update { it - id }
     }
 
-    override suspend fun replaceAll(items: List<CosmeticItem>) = synchronized(lock) {
+    override suspend fun replaceAll(items: List<CosmeticItem>): List<Long> = synchronized(lock) {
         var id = 1L
         val stored = items.map { it.copy(id = id++) }
         nextId = id
         this.items.value = stored.associateBy { it.id }
+        stored.map { it.id }
     }
 }

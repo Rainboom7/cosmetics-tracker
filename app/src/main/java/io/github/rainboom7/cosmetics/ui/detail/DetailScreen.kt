@@ -22,22 +22,27 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.AddAPhoto
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -59,9 +64,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import android.widget.Toast
@@ -70,20 +77,26 @@ import io.github.rainboom7.cosmetics.R
 import io.github.rainboom7.cosmetics.core.model.CosmeticItem
 import io.github.rainboom7.cosmetics.core.model.ExpiryStatus
 import io.github.rainboom7.cosmetics.core.model.ItemStatus
+import io.github.rainboom7.cosmetics.core.model.ShelfStatus
 import io.github.rainboom7.cosmetics.core.model.UsageState
+import io.github.rainboom7.cosmetics.core.usage.ItemUsage
+import io.github.rainboom7.cosmetics.ui.components.DayMonthWords
 import io.github.rainboom7.cosmetics.ui.components.EmptyState
 import io.github.rainboom7.cosmetics.ui.components.FullDate
 import io.github.rainboom7.cosmetics.ui.components.ItemImage
 import io.github.rainboom7.cosmetics.ui.components.appViewModel
 import io.github.rainboom7.cosmetics.ui.components.categoryLabel
+import io.github.rainboom7.cosmetics.ui.components.shelfLabel
 import io.github.rainboom7.cosmetics.ui.components.usageLabel
+import io.github.rainboom7.cosmetics.ui.theme.Spacing
+import io.github.rainboom7.cosmetics.ui.theme.tone
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 
 @Composable
 fun DetailRoute(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit) {
-    val viewModel = appViewModel(key = "detail-$id") { DetailViewModel(id, it.collection, it.photoStorage) }
+    val viewModel = appViewModel(key = "detail-$id") { DetailViewModel(id, it.collection, it.photoStorage, it.usage) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     LaunchedEffect(viewModel) {
@@ -104,6 +117,7 @@ fun DetailRoute(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit) {
         is DetailState.Loaded -> DetailScreen(
             item = s.item,
             today = s.today,
+            usage = s.usage,
             onBack = onBack,
             onEdit = { onEdit(id) },
             onDelete = viewModel::delete,
@@ -114,6 +128,9 @@ fun DetailRoute(id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit) {
             onAddPhoto = { pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
             onBuyAgain = viewModel::buyAgain,
             onBought = viewModel::markBought,
+            onShelf = viewModel::toggleShelf,
+            onToggleFavorite = viewModel::toggleFavorite,
+            onToggleUsedToday = viewModel::toggleUsedToday,
         )
     }
 }
@@ -132,24 +149,32 @@ fun DetailScreen(
     onAddPhoto: () -> Unit,
     onBuyAgain: () -> Unit,
     onBought: () -> Unit,
+    usage: ItemUsage = ItemUsage(),
+    onShelf: (ShelfStatus) -> Unit = {},
+    onToggleFavorite: () -> Unit = {},
+    onToggleUsedToday: () -> Unit = {},
 ) {
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             Box {
                 PhotoPager(item)
-                TopButtons(item, onBack, onEdit, onDelete, onToggleWantBadly)
+                TopButtons(item, onBack, onEdit, onDelete, onToggleWantBadly, onToggleFavorite)
             }
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                item.brand?.let { Text(it.uppercase(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                Text(item.name, style = MaterialTheme.typography.titleLarge)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AssistChip(onClick = {}, label = { Text(categoryLabel(item.category)) })
-                    item.quantity?.let { AssistChip(onClick = {}, label = { Text(it) }) }
-                    item.shade?.let { AssistChip(onClick = {}, label = { Text(it) }) }
-                    item.periodAfterOpeningMonths?.let { AssistChip(onClick = {}, label = { Text(stringResource(R.string.pao_months, it)) }) }
+            Column(Modifier.padding(horizontal = Spacing.screen, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(Spacing.gap)) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    item.brand?.let { Text(it.uppercase(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    Text(item.name, style = MaterialTheme.typography.headlineSmall)
+                }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SoftTag(categoryLabel(item.category))
+                    item.quantity?.let { SoftTag(it) }
+                    item.shade?.let { SoftTag(it) }
+                    item.periodAfterOpeningMonths?.let { SoftTag(stringResource(R.string.pao_months, it)) }
                 }
                 if (item.status == ItemStatus.OWNED) {
                     MyCopy(item, today, onUsage, onRemaining, onOpenedOn)
+                    if (item.usage != UsageState.FINISHED) StatusSection(item, onShelf)
+                    UsageSection(usage, enabled = item.usage != UsageState.FINISHED, onToggleUsedToday)
                 } else {
                     WishInfo(item)
                 }
@@ -160,7 +185,7 @@ fun DetailScreen(
             }
         }
         Row(
-            Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp),
+            Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = Spacing.screen, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             OutlinedButton(onClick = onAddPhoto, modifier = Modifier.weight(1f)) {
@@ -180,7 +205,7 @@ fun DetailScreen(
 private fun PhotoPager(item: CosmeticItem) {
     val images = item.images.ifEmpty { listOf(null) }
     val pager = rememberPagerState { images.size }
-    Box(Modifier.fillMaxWidth().height(300.dp)) {
+    Box(Modifier.fillMaxWidth().height(320.dp).clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))) {
         HorizontalPager(pager, modifier = Modifier.fillMaxSize()) { page ->
             val model = images[page]
             ItemImage(
@@ -204,7 +229,14 @@ private fun PhotoPager(item: CosmeticItem) {
 }
 
 @Composable
-private fun TopButtons(item: CosmeticItem, onBack: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit, onToggleWantBadly: () -> Unit) {
+private fun TopButtons(
+    item: CosmeticItem,
+    onBack: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    onToggleWantBadly: () -> Unit,
+    onToggleFavorite: () -> Unit,
+) {
     var menu by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth().statusBarsPadding().padding(8.dp)) {
@@ -216,6 +248,15 @@ private fun TopButtons(item: CosmeticItem, onBack: () -> Unit, onEdit: () -> Uni
                     if (item.wantBadly) Icons.Outlined.Favorite else Icons.Outlined.FavoriteBorder,
                     contentDescription = stringResource(R.string.want_badly),
                     tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+        } else {
+            RoundButton(onToggleFavorite) {
+                Icon(
+                    if (item.favorite) Icons.Outlined.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = stringResource(if (item.favorite) R.string.action_unfavorite else R.string.action_favorite),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.testTag("favorite_button"),
                 )
             }
         }
@@ -254,8 +295,8 @@ private fun MyCopy(
     onOpenedOn: (LocalDate) -> Unit,
 ) {
     var pickDate by remember { mutableStateOf(false) }
-    Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.large) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = MaterialTheme.shapes.large) {
+        Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text(stringResource(R.string.my_copy), style = MaterialTheme.typography.titleMedium)
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                 UsageState.entries.forEachIndexed { index, usage ->
@@ -316,8 +357,8 @@ private fun MyCopy(
 @Composable
 private fun WishInfo(item: CosmeticItem) {
     val uriHandler = LocalUriHandler.current
-    Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.large) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = MaterialTheme.shapes.large) {
+        Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (item.wantBadly) Text(stringResource(R.string.want_badly), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleMedium)
             item.price?.let { Text(stringResource(R.string.price_value, it)) }
             item.link?.let { link ->
@@ -344,5 +385,89 @@ private fun Ingredients(text: String) {
             Icon(if (open) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, contentDescription = null)
         }
         AnimatedVisibility(open) { Text(text, style = MaterialTheme.typography.bodySmall) }
+    }
+}
+
+@Composable
+private fun SoftTag(text: String) {
+    Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = CircleShape) {
+        Text(
+            text,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+        )
+    }
+}
+
+/** "Статус" chips: pastel per status; the automatic "Заканчивается" shows as selected but unset. */
+@Composable
+private fun StatusSection(item: CosmeticItem, onShelf: (ShelfStatus) -> Unit) {
+    val effective = item.effectiveShelfStatus()
+    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = MaterialTheme.shapes.large) {
+        Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.shelf_title), style = MaterialTheme.typography.titleMedium)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("shelf_chips")) {
+                ShelfStatus.entries.forEach { shelf ->
+                    val tone = shelf.tone()
+                    FilterChip(
+                        selected = effective == shelf,
+                        onClick = { onShelf(shelf) },
+                        label = { Text(shelfLabel(shelf)) },
+                        shape = CircleShape,
+                        border = null,
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            selectedContainerColor = tone.tone,
+                            selectedLabelColor = tone.ink,
+                        ),
+                    )
+                }
+            }
+            if (item.shelfStatus != null) {
+                Text(stringResource(R.string.shelf_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+/** "Использование": mark today, last use and how often in the last 30 days. */
+@Composable
+private fun UsageSection(usage: ItemUsage, enabled: Boolean, onToggleUsedToday: () -> Unit) {
+    Surface(color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f), shape = MaterialTheme.shapes.large) {
+        Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
+                Text(stringResource(R.string.usage_section), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 8.dp))
+            }
+            Text(
+                usage.lastUsed?.let { stringResource(R.string.usage_last, it.format(DayMonthWords)) } ?: stringResource(R.string.usage_never),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            if (usage.last30Days > 0) {
+                Text(
+                    pluralStringResource(R.plurals.usage_last30, usage.last30Days, usage.last30Days),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (enabled) {
+                if (usage.usedToday) {
+                    Button(
+                        onClick = onToggleUsedToday,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                        modifier = Modifier.fillMaxWidth().testTag("used_today"),
+                    ) {
+                        Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Text(stringResource(R.string.usage_marked_today), modifier = Modifier.padding(start = 8.dp))
+                    }
+                } else {
+                    OutlinedButton(onClick = onToggleUsedToday, modifier = Modifier.fillMaxWidth().testTag("used_today")) {
+                        Text(stringResource(R.string.usage_mark_today))
+                    }
+                }
+            }
+        }
     }
 }

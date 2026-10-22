@@ -18,66 +18,107 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.rainboom7.cosmetics.core.model.Category
+import io.github.rainboom7.cosmetics.core.model.ShelfStatus
 
-// Fallback palette from the design spec (seed #8C4A60), used below Android 12 or without dynamic color.
+// Pastel palette from the design spec, v2 ("Пудра"): dusty rose primary, lavender secondary,
+// mint tertiary on a warm off-white. Text roles keep at least 4.5:1 contrast on their containers.
 private val LightColors = lightColorScheme(
-    primary = Color(0xFF8C4A60),
+    primary = Color(0xFF9C5B73),
     onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFFFD9E2),
-    onPrimaryContainer = Color(0xFF3A071D),
-    tertiaryContainer = Color(0xFFFFDCC1),
-    onTertiaryContainer = Color(0xFF2E1500),
-    background = Color(0xFFFFF8F8),
-    surface = Color(0xFFFFF8F8),
+    primaryContainer = Color(0xFFFCE4EC),
+    onPrimaryContainer = Color(0xFF3E1424),
+    secondary = Color(0xFF6E5F80),
+    onSecondary = Color(0xFFFFFFFF),
+    secondaryContainer = Color(0xFFECE5F6),
+    onSecondaryContainer = Color(0xFF2C2238),
+    tertiary = Color(0xFF4A7565),
+    onTertiary = Color(0xFFFFFFFF),
+    tertiaryContainer = Color(0xFFDCF1E6),
+    onTertiaryContainer = Color(0xFF0F2A20),
+    background = Color(0xFFFFFBFA),
+    onBackground = Color(0xFF2A2125),
+    surface = Color(0xFFFFFBFA),
+    onSurface = Color(0xFF2A2125),
+    surfaceVariant = Color(0xFFF3E7EA),
+    onSurfaceVariant = Color(0xFF6A5A60),
     surfaceContainerLowest = Color(0xFFFFFFFF),
-    surfaceContainer = Color(0xFFFAEAED),
-    surfaceContainerHigh = Color(0xFFF4E4E7),
-    surfaceContainerHighest = Color(0xFFEEDEE1),
-    onSurface = Color(0xFF22191C),
-    onSurfaceVariant = Color(0xFF514347),
-    outline = Color(0xFF837377),
-    outlineVariant = Color(0xFFD5C2C6),
-    error = Color(0xFFBA1A1A),
+    surfaceContainerLow = Color(0xFFFFF5F6),
+    surfaceContainer = Color(0xFFFBEFF1),
+    surfaceContainerHigh = Color(0xFFF6E9EC),
+    surfaceContainerHighest = Color(0xFFF0E3E6),
+    outline = Color(0xFF9C8A90),
+    outlineVariant = Color(0xFFEADCE0),
+    error = Color(0xFFB3261E),
+    onError = Color(0xFFFFFFFF),
+    errorContainer = Color(0xFFFFE1DE),
+    onErrorContainer = Color(0xFF5C1410),
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFFFFB1C8),
-    onPrimary = Color(0xFF541D32),
-    primaryContainer = Color(0xFF703348),
-    onPrimaryContainer = Color(0xFFFFD9E2),
-    tertiaryContainer = Color(0xFF623F20),
-    onTertiaryContainer = Color(0xFFFFDCC1),
-    background = Color(0xFF191113),
-    surface = Color(0xFF191113),
-    surfaceContainerLowest = Color(0xFF140C0E),
-    surfaceContainer = Color(0xFF261D20),
-    surfaceContainerHigh = Color(0xFF31282A),
-    surfaceContainerHighest = Color(0xFF3C3235),
-    onSurface = Color(0xFFEFDFE2),
-    onSurfaceVariant = Color(0xFFD5C2C6),
-    outline = Color(0xFF9E8C90),
-    outlineVariant = Color(0xFF514347),
+    primary = Color(0xFFF4B6CB),
+    onPrimary = Color(0xFF4E2133),
+    primaryContainer = Color(0xFF5E3346),
+    onPrimaryContainer = Color(0xFFFFD9E4),
+    secondary = Color(0xFFD4C4E6),
+    onSecondary = Color(0xFF3A2F48),
+    secondaryContainer = Color(0xFF463B52),
+    onSecondaryContainer = Color(0xFFECE5F6),
+    tertiary = Color(0xFFA9D4C2),
+    onTertiary = Color(0xFF173A2E),
+    tertiaryContainer = Color(0xFF2F4D41),
+    onTertiaryContainer = Color(0xFFCFEBDD),
+    background = Color(0xFF1C1618),
+    onBackground = Color(0xFFF0E3E6),
+    surface = Color(0xFF1C1618),
+    onSurface = Color(0xFFF0E3E6),
+    surfaceVariant = Color(0xFF3A3034),
+    onSurfaceVariant = Color(0xFFD3C3C8),
+    surfaceContainerLowest = Color(0xFF161113),
+    surfaceContainerLow = Color(0xFF211A1D),
+    surfaceContainer = Color(0xFF261F22),
+    surfaceContainerHigh = Color(0xFF30282B),
+    surfaceContainerHighest = Color(0xFF3B3235),
+    outline = Color(0xFF9E8C92),
+    outlineVariant = Color(0xFF4E4246),
     error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
 )
 
+// Rounder than stock M3: soft, "airy" cards and pill-shaped chips.
 private val AppShapes = Shapes(
-    small = RoundedCornerShape(8.dp),
-    medium = RoundedCornerShape(12.dp),
-    large = RoundedCornerShape(16.dp),
-    extraLarge = RoundedCornerShape(28.dp),
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(32.dp),
 )
 
 private val AppTypography = Typography().let { base ->
     base.copy(
+        // Tab titles: lighter and a bit tighter than stock, so headers feel calm.
+        headlineMedium = base.headlineMedium.copy(fontWeight = FontWeight.Normal, letterSpacing = (-0.25).sp),
+        titleLarge = base.titleLarge.copy(fontWeight = FontWeight.Normal),
         // Brand line on cards: caps, letter-spaced.
-        labelMedium = base.labelMedium.copy(fontWeight = FontWeight.Medium, letterSpacing = 0.4.sp),
+        labelMedium = base.labelMedium.copy(fontWeight = FontWeight.Medium, letterSpacing = 0.8.sp),
     )
 }
 
+/** Screen side padding and the gap between cards (design spec v2: 20/16, up from 16/12). */
+object Spacing {
+    val screen = 20.dp
+    val gap = 16.dp
+}
+
+/**
+ * The app always uses its own pastel palette. Dynamic color stays available ([dynamicColor]) but is
+ * off by default: wallpaper colors are often saturated and would undo the soft look.
+ */
 @Composable
 fun CosmeticsTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val colors: ColorScheme = when {
@@ -91,12 +132,28 @@ fun CosmeticsTheme(
     MaterialTheme(colorScheme = colors, shapes = AppShapes, typography = AppTypography, content = content)
 }
 
-/** Tinted background + ink color for photo placeholders, per category (design spec). */
+/** A pastel background + readable ink pair, used for placeholders and status chips. */
 data class CategoryTone(val tone: Color, val ink: Color)
 
+/** Photo placeholder tones per category (design spec). */
 fun Category.tone(): CategoryTone = when (this) {
-    Category.SKINCARE, Category.BODY -> CategoryTone(Color(0xFFE3F0F6), Color(0xFF3B6E86))
-    Category.MAKEUP, Category.NAILS, Category.FRAGRANCE -> CategoryTone(Color(0xFFF6E3EA), Color(0xFF8C4A60))
-    Category.HAIR -> CategoryTone(Color(0xFFE9F2E1), Color(0xFF4F6B35))
-    Category.OTHER -> CategoryTone(Color(0xFFF1ECE4), Color(0xFF6B5B45))
+    Category.SKINCARE, Category.BODY -> CategoryTone(Color(0xFFE4F0F7), Color(0xFF3B6E86))
+    Category.MAKEUP, Category.NAILS, Category.FRAGRANCE -> CategoryTone(Color(0xFFF9E6EE), Color(0xFF8E4F67))
+    Category.HAIR -> CategoryTone(Color(0xFFE6F3E9), Color(0xFF41694B))
+    Category.OTHER -> CategoryTone(Color(0xFFF3EEE7), Color(0xFF6B5B45))
 }
+
+/**
+ * Status chip colors: mint "есть запас", peach "заканчивается", lavender "пробую",
+ * stone "не использую", sky "отдам". Light pastels with dark ink work in both themes.
+ */
+fun ShelfStatus.tone(): CategoryTone = when (this) {
+    ShelfStatus.STOCKED -> CategoryTone(Color(0xFFDCF1E6), Color(0xFF2F5E4B))
+    ShelfStatus.RUNNING_LOW -> CategoryTone(Color(0xFFFFE4D2), Color(0xFF8A4B1F))
+    ShelfStatus.TRYING -> CategoryTone(Color(0xFFECE5F6), Color(0xFF5B4A75))
+    ShelfStatus.NOT_USING -> CategoryTone(Color(0xFFEEEAE6), Color(0xFF5E5650))
+    ShelfStatus.GIVE_AWAY -> CategoryTone(Color(0xFFDFEEF7), Color(0xFF2F5F7A))
+}
+
+/** Dot color for usage marks in the calendar, matching the item's category. */
+val Category.dot: Color get() = tone().ink

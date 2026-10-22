@@ -15,6 +15,13 @@ enum class ItemStatus {
 enum class UsageState { NEW, OPENED, FINISHED }
 
 /**
+ * How the user feels about an owned item, picked by hand on the "Статус" chips: plenty in stock,
+ * running low, trying it out, not going to use it, giving it away. Unlike [UsageState] it does not
+ * drive the PAO countdown; it is for sorting the shelf and deciding what to buy or declutter.
+ */
+enum class ShelfStatus { STOCKED, RUNNING_LOW, TRYING, NOT_USING, GIVE_AWAY }
+
+/**
  * A product in the user's collection or wishlist. One table holds both lists; [status] tells
  * which. Owned-only fields ([usage], [remainingPercent], [openedOn]) are ignored for wishlist
  * items, wishlist-only fields ([wantBadly], [rebuy], [price], [link]) for owned ones.
@@ -25,6 +32,8 @@ enum class UsageState { NEW, OPENED, FINISHED }
  * A manually added item must have at least one own photo, see [hasImage].
  *
  * [openedOn] + [periodAfterOpeningMonths] (the "PAO" jar symbol, e.g. 12M) give [expiresOn].
+ * [shelfStatus] and [favorite] are the user's own marks on owned items; [finishedOn] is stamped when
+ * an item is used up, for the "Пустые баночки" counter.
  */
 data class CosmeticItem(
     val id: Long = 0,
@@ -49,6 +58,9 @@ data class CosmeticItem(
     val price: String? = null,
     val link: String? = null,
     val addedAtMillis: Long = 0,
+    val shelfStatus: ShelfStatus? = null,
+    val favorite: Boolean = false,
+    val finishedOn: LocalDate? = null,
 ) {
     init {
         require(name.isNotBlank()) { "name must not be blank" }
@@ -82,11 +94,22 @@ data class CosmeticItem(
         }
     }
 
-    /** The red badge on a collection card, if any. Expiry is more urgent than running low. */
+    /**
+     * The status shown on the card: the user's choice, or "Заканчивается" worked out from the
+     * remaining slider when the user has not picked one. Null for wishlist and finished items.
+     */
+    fun effectiveShelfStatus(): ShelfStatus? = when {
+        status != ItemStatus.OWNED || usage == UsageState.FINISHED -> null
+        shelfStatus != null -> shelfStatus
+        usage == UsageState.OPENED && remainingPercent <= RUNNING_LOW_PERCENT -> ShelfStatus.RUNNING_LOW
+        else -> null
+    }
+
+    /** The warning badge on a collection card, if any. Expiry is more urgent than running low. */
     fun badge(today: LocalDate): ItemBadge? = when {
         status != ItemStatus.OWNED || usage == UsageState.FINISHED -> null
         expiryStatus(today) == ExpiryStatus.SOON || expiryStatus(today) == ExpiryStatus.EXPIRED -> ItemBadge.EXPIRING
-        usage == UsageState.OPENED && remainingPercent <= RUNNING_LOW_PERCENT -> ItemBadge.RUNNING_LOW
+        effectiveShelfStatus() == ShelfStatus.RUNNING_LOW -> ItemBadge.RUNNING_LOW
         else -> null
     }
 

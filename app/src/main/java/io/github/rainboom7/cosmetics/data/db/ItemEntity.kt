@@ -1,11 +1,13 @@
 package io.github.rainboom7.cosmetics.data.db
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import io.github.rainboom7.cosmetics.core.model.Category
 import io.github.rainboom7.cosmetics.core.model.CosmeticItem
 import io.github.rainboom7.cosmetics.core.model.ItemStatus
+import io.github.rainboom7.cosmetics.core.model.ShelfStatus
 import io.github.rainboom7.cosmetics.core.model.UsageState
 import java.time.LocalDate
 
@@ -37,6 +39,10 @@ data class ItemEntity(
     val price: String?,
     val link: String?,
     val addedAtMillis: Long,
+    // Added in version 2, see AppDatabase.MIGRATION_1_2.
+    val shelfStatus: String?,
+    @ColumnInfo(defaultValue = "0") val favorite: Boolean,
+    val finishedOn: LocalDate?,
 ) {
     fun toModel() = CosmeticItem(
         id = id,
@@ -61,6 +67,9 @@ data class ItemEntity(
         price = price,
         link = link,
         addedAtMillis = addedAtMillis,
+        shelfStatus = ShelfStatus.entries.firstOrNull { it.name == shelfStatus },
+        favorite = favorite,
+        finishedOn = finishedOn,
     )
 
     companion object {
@@ -87,6 +96,9 @@ data class ItemEntity(
             price = item.price,
             link = item.link,
             addedAtMillis = item.addedAtMillis,
+            shelfStatus = item.shelfStatus?.name,
+            favorite = item.favorite,
+            finishedOn = item.finishedOn,
         )
     }
 }
