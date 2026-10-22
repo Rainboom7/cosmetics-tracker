@@ -1,0 +1,21 @@
+name: OBF probe (temporary)
+on: push
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          UA="CosmeticsTracker-Android/0.1.0 (github.com/Rainboom7)"
+          for q in loreal "l'oreal" nivea "крем" "шампунь" "maybelline mascara" "garnier"; do
+            echo "=== search.pl q=$q"
+            curl -sS -G -A "$UA" "https://world.openbeautyfacts.org/cgi/search.pl" \
+              --data-urlencode "search_terms=$q" -d search_simple=1 -d action=process -d json=1 -d page_size=24 \
+              -d fields=code,product_name,brands -o r.json -w "http=%{http_code} size=%{size_download}\n"
+            jq -c '{count, page, page_size, n: (.products|length), first: [.products[:5][] | {code, product_name, brands}]}' r.json || head -c 500 r.json
+          done
+          echo "=== v2 search brands_tags=nivea"
+          curl -sS -A "$UA" "https://world.openbeautyfacts.org/api/v2/search?brands_tags=nivea&page_size=5&fields=code,product_name" | jq -c '{count, n: (.products|length)}'
+          echo "=== search-a-licious obf"
+          curl -sS -A "$UA" "https://search.openfoodfacts.org/search?q=nivea&index_id=obf&page_size=5" -w "\nhttp=%{http_code}\n" | head -c 800
+          echo; echo "=== search-a-licious default"
+          curl -sS -A "$UA" "https://search.openfoodfacts.org/search?q=nivea%20creme&page_size=3" -w "\nhttp=%{http_code}\n" | head -c 800
