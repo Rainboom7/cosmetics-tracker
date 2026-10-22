@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Косметичка</string>
+
+    <!-- Tabs -->
+    <string name="tab_collection">Коллекция</string>
+    <string name="tab_wishlist">Желаемое</string>
+    <string name="tab_catalog">Каталог</string>
+
+    <!-- Categories -->
+    <string name="category_skincare">Уход</string>
+    <string name="category_makeup">Макияж</string>
+    <string name="category_hair">Волосы</string>
+    <string name="category_body">Тело</string>
+    <string name="category_fragrance">Ароматы</string>
+    <string name="category_nails">Ногти</string>
+    <string name="category_other">Другое</string>
+
+    <!-- Usage -->
+    <string name="usage_new">Новое</string>
+    <string name="usage_opened">Открыто</string>
+    <string name="usage_finished">Закончилось</string>
+
+    <!-- Actions -->
+    <string name="action_add">Добавить</string>
+    <string name="action_add_manually">Добавить вручную</string>
+    <string name="action_add_photo">Добавить фото</string>
+    <string name="action_allow">Разрешить</string>
+    <string name="action_back">Назад</string>
+    <string name="action_bought">Куплено</string>
+    <string name="action_buy_again">Купить снова</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="action_choose">Выбрать</string>
+    <string name="action_close">Закрыть</string>
+    <string name="action_delete">Удалить</string>
+    <string name="action_edit">Редактировать</string>
+    <string name="action_find_in_catalog">Найти в каталоге</string>
+    <string name="action_ok">ОК</string>
+    <string name="action_open">Открыть</string>
+    <string name="action_photo_search">Поиск по фото</string>
+    <string name="action_retake">Переснять</string>
+    <string name="action_retry">Повторить</string>
+    <string name="action_save">Сохранить</string>
+    <string name="action_take_photo">Сфотографировать</string>
+    <string name="action_to_collection">В коллекцию</string>
+    <string name="action_to_wishlist">В желаемое</string>
+    <string name="action_undo">Отменить</string>
+    <string name="more">Ещё</string>
+
+    <!-- Collection -->
+    <string name="collection_search_hint">Поиск в коллекции</string>
+    <string name="collection_empty_title">Добавьте первое средство</string>
+    <string name="collection_empty_body">Отсканируйте штрихкод, сфотографируйте упаковку или найдите средство в каталоге.</string>
+    <string name="filter_all">Все</string>
+    <string name="filter_all_count">Все · %1$d</string>
+    <string name="nothing_found">Ничего не нашлось</string>
+    <string name="nothing_found_body">Попробуйте другой запрос или фильтр.</string>
+    <plurals name="expiring_banner">
+        <item quantity="one">У %1$d средства срок после вскрытия истекает в этом месяце</item>
+        <item quantity="few">У %1$d средств срок после вскрытия истекает в этом месяце</item>
+        <item quantity="many">У %1$d средств срок после вскрытия истекает в этом месяце</item>
+        <item quantity="other">У %1$d средства срок после вскрытия истекает в этом месяце</item>
+    </plurals>
+    <string name="badge_expiring">Истекает</string>
+    <string name="badge_running_low">Заканчивается</string>
+    <string name="opened_on">Открыт %1$s</string>
+    <string name="until">до %1$s</string>
+
+    <!-- Wishlist -->
+    <string name="want_badly">Хочу сильно</string>
+    <string name="rebuy">Купить снова</string>
+    <string name="wishlist_empty_title">Здесь будет то, что хочется</string>
+    <string name="wishlist_empty_body">Нажмите ♡ в каталоге или «Купить снова» в карточке средства.</string>
+    <string name="wishlist_moved">Перенесено в коллекцию</string>
+    <string name="similar_owned">Похожее уже есть у вас</string>
+    <string name="wish_no_details">Можно добавить цену, ссылку и примечание через «Редактировать».</string>
+    <string name="price_value">Цена: %1$s</string>
+
+    <!-- Catalog -->
+    <string name="catalog_search_hint">Бренд, название или штрихкод</string>
+    <string name="catalog_intro_title">Каталог Open Beauty Facts</string>
+    <string name="catalog_intro_body">Открытая база косметики с фото. Российских средств в ней пока немного: если не нашлось, добавьте вручную.</string>
+    <string name="catalog_error_title">Нет связи с каталогом</string>
+    <string name="catalog_error_body">Ваша коллекция доступна офлайн, а поиск по базе заработает, когда появится интернет.</string>
+    <string name="filter_category">Категория</string>
+    <string name="filter_brand">Бренд</string>
+    <string name="filter_with_photo">С фото</string>
+    <string name="already_in_collection">Уже в коллекции</string>
+    <string name="already_in_wishlist">Уже в желаемом</string>
+    <string name="added_to_collection">Добавлено в коллекцию</string>
+    <string name="added_to_wishlist">Добавлено в желаемое</string>
+    <string name="already_there">Это средство уже есть в списке</string>
+    <string name="moved_from_wishlist">Перенесено из желаемого в коллекцию</string>
+    <string name="not_in_catalog_title">Нет нужного средства в базе?</string>
+    <string name="not_in_catalog_body">Так бывает. Добавьте его вручную с фото, это займёт минуту.</string>
+
+    <!-- Detail -->
+    <string name="item_missing">Средство не найдено</string>
+    <string name="my_copy">Мой экземпляр</string>
+    <string name="opened_date">Дата вскрытия</string>
+    <string name="not_set">не указана</string>
+    <string name="not_opened">не открыто</string>
+    <string name="good_until">Годен до</string>
+    <string name="remaining_percent">Осталось: %1$d%%</string>
+    <string name="ingredients">Состав (INCI)</string>
+    <string name="pao_months">PAO %1$d мес.</string>
+    <string name="pao_short">%1$dM</string>
+    <string name="delete_title">Удалить средство?</string>
+    <string name="photo_attribution_obf">Фото: Open Beauty Facts, CC BY-SA</string>
+
+    <!-- Scan -->
+    <string name="scan_hint_barcode">Наведите на штрихкод — сработает само</string>
+    <string name="scan_hint_photo">Наведите на этикетку или баночку и сделайте снимок</string>
+    <string name="mode_barcode">Штрихкод</string>
+    <string name="mode_photo">Фото упаковки</string>
+    <string name="from_gallery">Из галереи</string>
+    <string name="enter_manually">Ввести вручную</string>
+    <string name="flash">Вспышка</string>
+    <string name="capture_failed">Не получилось сделать снимок, попробуйте ещё раз</string>
+    <string name="camera_permission_title">Нужен доступ к камере</string>
+    <string name="camera_permission_body">Камера нужна, чтобы считать штрихкод или сфотографировать упаковку. Снимки обрабатываются на телефоне.</string>
+    <string name="is_it_this">Это оно?</string>
+    <string name="match_percent">Совпадение %1$d%%</string>
+    <string name="nothing_fits">Ничего не подходит — заполнить по фото</string>
+
+    <!-- Form -->
+    <string name="add_title">Новое средство</string>
+    <string name="edit_title">Редактирование</string>
+    <string name="reason_not_found">Этого штрихкода пока нет в базе — так бывает. Мы заполнили поля по тексту с упаковки, проверьте.</string>
+    <string name="reason_no_match">Не нашли в базе. Мы заполнили поля по тексту с упаковки, проверьте.</string>
+    <string name="reason_offline">Нет связи с каталогом, поэтому заполните поля вручную. Средство сохранится на телефоне.</string>
+    <string name="barcode_value">Штрихкод: %1$s</string>
+    <string name="photo_required">Фото обязательно: так средство легко узнать в коллекции.</string>
+    <string name="field_brand">Бренд</string>
+    <string name="field_name">Название</string>
+    <string name="field_category">Категория</string>
+    <string name="field_shade">Оттенок</string>
+    <string name="field_pao">Срок после вскрытия (PAO)</string>
+    <string name="field_price">Цена</string>
+    <string name="field_link">Ссылка на магазин</string>
+    <string name="field_notes">Примечание</string>
+    <string name="form_requirements">Чтобы сохранить, нужны фото и название.</string>
+
+    <!-- About -->
+    <string name="about_title">О приложении</string>
+    <string name="about_data_source">Данные о продуктах: Open Beauty Facts (openbeautyfacts.org), лицензия ODbL. Спасибо сообществу, которое собирает эту базу.</string>
+    <string name="about_photos_license">Фото продуктов из базы распространяются по лицензии CC BY-SA и подписаны на карточках.</string>
+    <string name="about_on_device">Штрихкоды и текст с упаковки распознаются прямо на телефоне (ML Kit), снимки никуда не отправляются. В интернет уходят только поисковые запросы к Open Beauty Facts.</string>
+    <string name="backup_title">Резервная копия</string>
+    <string name="backup_body">Сохраните коллекцию и желаемое в файл, чтобы перенести на другой телефон. Свои фото в файл не входят.</string>
+    <string name="backup_export">Сохранить в файл</string>
+    <string name="backup_import">Восстановить из файла</string>
+    <string name="backup_saved">Копия сохранена</string>
+    <string name="backup_restored">Коллекция восстановлена</string>
+    <string name="backup_failed">Не получилось, проверьте файл</string>
+    <string name="notifications_body">Напоминания придут за 30 дней до конца срока после вскрытия и в последний день.</string>
+    <string name="notifications_enable">Включить напоминания</string>
+    <string name="notification_channel_expiry">Сроки годности</string>
+    <plurals name="notification_expiry_title">
+        <item quantity="one">Срок подходит к концу у %1$d средства</item>
+        <item quantity="few">Срок подходит к концу у %1$d средств</item>
+        <item quantity="many">Срок подходит к концу у %1$d средств</item>
+        <item quantity="other">Срок подходит к концу у %1$d средства</item>
+    </plurals>
+</resources>
